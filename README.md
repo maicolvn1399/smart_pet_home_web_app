@@ -68,14 +68,15 @@ Before you start, install these on your machine:
 
 ## Project structure
 
+```
 src/
-├── components/      Reusable UI components
-│   └── ui/          shadcn/ui components
-├── pages/           Page components (Landing, Login, Home, etc.)
-├── lib/             Utility functions
-├── App.jsx          Main app with routing
-└── main.jsx         Entry point
-
+├── components/       Reusable UI components
+│   └── ui/           shadcn/ui components
+├── pages/            Page components (Landing, Login, Home, etc.)
+├── lib/              Utility functions
+├── App.jsx           Main app with routing
+└── main.jsx          Entry point
+```
 ## Common commands
 
 - npm run dev      Start dev server (localhost:5173)
