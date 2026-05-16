@@ -16,3 +16,68 @@ Note: This will impact Vite dev & build performances.
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+
+# Smart Pet Home — Web App
+
+IoT pet care ecosystem with a React-based web/PWA frontend and Supabase backend.
+
+## Prerequisites
+
+Before you start, install these on your machine:
+
+- **Node.js v18+** — https://nodejs.org (choose the LTS version)
+- **Git** — https://git-scm.com
+- **VS Code** (recommended) — https://code.visualstudio.com
+
+## Getting started
+
+1. **Clone the repository**
+
+   git clone https://github.com/maicolvn1399/smart-pet-home.git
+   cd smart-pet-home
+
+2. **Install dependencies**
+
+   npm install
+
+   This installs everything listed in `package.json` automatically. Takes 1-2 minutes.
+
+3. **Start the development server**
+
+   npm run dev
+
+4. **Open the app**
+
+   Go to http://localhost:5173 in your browser.
+
+## Tech stack
+
+- React 19 with Vite
+- React Router for navigation
+- Tailwind CSS v4 for styling
+- shadcn/ui for components
+- Supabase (database + auth + realtime) — coming soon
+
+## Recommended VS Code extensions
+
+- ES7+ React/Redux/React-Native snippets
+- Tailwind CSS IntelliSense
+- Prettier
+- ESLint
+
+## Project structure
+
+src/
+├── components/      Reusable UI components
+│   └── ui/          shadcn/ui components
+├── pages/           Page components (Landing, Login, Home, etc.)
+├── lib/             Utility functions
+├── App.jsx          Main app with routing
+└── main.jsx         Entry point
+
+## Common commands
+
+- npm run dev      Start dev server (localhost:5173)
+- npm run build    Build for production
+- npm run preview  Preview production build locally
