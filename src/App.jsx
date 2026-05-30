@@ -7,10 +7,12 @@ import Home from './pages/Home'
 import Devices from './pages/Devices'
 import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
+import TestConnection from './tests/TestConnection'
 
 function App() {
   return (
     <BrowserRouter>
+      {/*<TestConnection */}
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -23,7 +25,6 @@ function App() {
           <Route path='/settings' element={<Settings />} />
         </Route>
       </Routes>
-
     </BrowserRouter>
   )
 }
