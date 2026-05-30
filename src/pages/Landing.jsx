@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import Autoplay from 'embla-carousel-autoplay'
+import Fade from 'embla-carousel-fade'
 import { Button } from '@/components/ui/button'
 import {
   Carousel,
@@ -68,6 +69,7 @@ function Landing() {
   const autoplayPlugin = useRef(
     Autoplay({ delay: 5000, stopOnInteraction: false })
   )
+  const fadePlugin = useRef(Fade())
 
   useEffect(() => {
     setImages(shuffle(allImages))
@@ -79,7 +81,7 @@ function Landing() {
     <div className="relative w-full h-screen overflow-hidden">
       {/* Carousel fullscreen background */}
       <Carousel
-        plugins={[autoplayPlugin.current]}
+        plugins={[autoplayPlugin.current, fadePlugin.current]}
         opts={{ loop: true }}
         className="absolute inset-0 w-full h-full"
       >
