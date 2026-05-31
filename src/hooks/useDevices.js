@@ -1,26 +1,17 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { usePet } from '@/context/PetContext'
 
 export const DEVICE_MAP = {
-  KBL: { name: 'Kibble dispenser' },
-  WTR: { name: 'Water dispenser' },
-  TRT: { name: 'Treat dispenser' },
-  BAL: { name: 'Ball launcher' },
-  MOV: { name: 'Movement detector' },
-  DOR: { name: 'Pet door' },
-  TMP: { name: 'Temperature monitor' },
-  VOC: { name: 'Voice communication' },
+  KBL: { name: 'Kibble dispenser',    type: 'kibble_dispenser'    },
+  WTR: { name: 'Water dispenser',     type: 'water_dispenser'     },
+  TRT: { name: 'Treat dispenser',     type: 'treat_dispenser'     },
+  BAL: { name: 'Ball launcher',       type: 'ball_launcher'       },
+  MOV: { name: 'Movement detector',   type: 'movement_detector'   },
+  DOR: { name: 'Pet door',            type: 'pet_door'            },
+  TMP: { name: 'Temperature monitor', type: 'temperature_monitor' },
+  VOC: { name: 'Voice communication', type: 'voice_communication' },
 }
-
-const VALID_SERIALS = [
-  'SPH-KBL-A4B7C2',
-  'SPH-WTR-X9Y2Z5',
-  'SPH-TRT-K8L1M4',
-  'SPH-BAL-P3Q7R1',
-  'SPH-MOV-H5J2K9',
-  'SPH-DOR-T6U3V8',
-  'SPH-TMP-W1X4Y7',
-  'SPH-VOC-B2C5D8',
-]
 
 function parseSerial(serial) {
   const parts = serial.toUpperCase().split('-')
@@ -32,13 +23,35 @@ function parseSerial(serial) {
 }
 
 export function useDevices() {
+  const { activePet } = usePet()
   const [devices, setDevices] = useState([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
 
   const seg1Ref = useRef(null)
   const seg2Ref = useRef(null)
   const seg3Ref = useRef(null)
+
+  // Fetch devices for active pet
+  useEffect(() => {
+    if (!activePet) return
+
+    async function fetchDevices() {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('devices')
+        .select('*')
+        .eq('pet_id', activePet.id)
+        .order('created_at', { ascending: true })
+
+      if (!error && data) setDevices(data)
+      setLoading(false)
+    }
+
+    fetchDevices()
+  }, [activePet])
 
   function getSerial() {
     const s1 = seg1Ref.current?.value.toUpperCase() ?? ''
@@ -85,7 +98,7 @@ export function useDevices() {
     }
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
     const serial = getSerial()
     const parsed = parseSerial(serial)
 
@@ -94,18 +107,45 @@ export function useDevices() {
       return
     }
 
-    if (!VALID_SERIALS.includes(serial)) {
-      setError('Serial number not recognized.')
+    if (!activePet) {
+      setError('No active pet selected.')
       return
     }
 
-    if (devices.find((d) => d.serial === serial)) {
-      setError('This device is already registered.')
+    // Check if this pet already has this device
+    const duplicate = devices.find((d) => d.serial_number === serial)
+    if (duplicate) {
+      setError('This device is already registered for this pet.')
+      return
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setError('Not authenticated.')
       return
     }
 
     const deviceInfo = DEVICE_MAP[parsed.typeCode]
-    setDevices((prev) => [...prev, { ...deviceInfo, serial, id: serial }])
+
+    const { data, error: insertError } = await supabase
+      .from('devices')
+      .insert({
+        pet_id: activePet.id,
+        user_id: user.id,
+        serial_number: serial,
+        type: deviceInfo.type,
+        name: deviceInfo.name,
+        status: 'offline',
+      })
+      .select()
+      .single()
+
+    if (insertError) {
+      setError(insertError.message)
+      return
+    }
+
+    setDevices((prev) => [...prev, data])
     setError('')
     setDialogOpen(false)
     clearInputs()
@@ -121,6 +161,7 @@ export function useDevices() {
 
   return {
     devices,
+    loading,
     dialogOpen,
     error,
     seg1Ref,
