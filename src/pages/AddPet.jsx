@@ -13,7 +13,26 @@ import { AlertCircle } from 'lucide-react'
 import { useAddPet } from '@/hooks/useAddPet'
 import logo from '@/assets/logo/logo_navbar.png'
 
-export default function AddPet({ redirectTo = '/home' }) {
+const SIZE_OPTIONS = [
+  { value: 'small', label: 'Small' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'large', label: 'Large' },
+]
+
+const COAT_TYPE_OPTIONS = [
+  { value: 'short', label: 'Short' },
+  { value: 'long', label: 'Long' },
+  { value: 'curly', label: 'Curly' },
+  { value: 'none', label: 'None / Hairless' },
+]
+
+const EAR_TYPE_OPTIONS = [
+  { value: 'floppy', label: 'Floppy' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'pointed', label: 'Pointed' },
+]
+
+export default function AddPet({ redirectTo = '/pet-photo' }) {
   const {
     name, setName,
     type, setType,
@@ -22,6 +41,10 @@ export default function AddPet({ redirectTo = '/home' }) {
     mixedBreedDesc, setMixedBreedDesc,
     ageCategory, setAgeCategory,
     weightKg, setWeightKg,
+    size, setSize,
+    coatColor, setCoatColor,
+    coatType, setCoatType,
+    earType, setEarType,
     error,
     loading,
     handleSubmit,
@@ -59,7 +82,7 @@ export default function AddPet({ redirectTo = '/home' }) {
           {/* Pet type */}
           <div className="space-y-2">
             <Label>Type</Label>
-            <Select value={type} onValueChange={setType}>
+            <Select value={type} onValueChange={(val) => { setType(val); setBreed('') }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
@@ -70,7 +93,7 @@ export default function AddPet({ redirectTo = '/home' }) {
             </Select>
           </div>
 
-          {/* Breed type selector */}
+          {/* Breed */}
           {type && (
             <div className="space-y-2">
               <Label>Breed</Label>
@@ -94,7 +117,6 @@ export default function AddPet({ redirectTo = '/home' }) {
                 ))}
               </div>
 
-              {/* Pure breed dropdown */}
               {breedType === 'pure' && (
                 <Select value={breed} onValueChange={setBreed}>
                   <SelectTrigger>
@@ -108,7 +130,6 @@ export default function AddPet({ redirectTo = '/home' }) {
                 </Select>
               )}
 
-              {/* Mixed breed text */}
               {breedType === 'mixed' && (
                 <Input
                   placeholder="e.g. Golden Retriever mix"
@@ -152,6 +173,88 @@ export default function AddPet({ redirectTo = '/home' }) {
             />
           </div>
 
+          {/* Physical traits */}
+          {type && (
+            <>
+              <div className="border-t border-border pt-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+                  Physical traits
+                </p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  These help us generate an AI portrait of your pet.
+                </p>
+              </div>
+
+              {/* Size */}
+              <div className="space-y-2">
+                <Label>Size</Label>
+                <div className="flex gap-2">
+                  {SIZE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setSize(opt.value)}
+                      className={`flex-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                        size === opt.value
+                          ? 'bg-brand-orange text-white border-brand-orange'
+                          : 'border-border text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Coat color */}
+              <div className="space-y-2">
+                <Label htmlFor="coat_color">Coat color</Label>
+                <Input
+                  id="coat_color"
+                  placeholder="e.g. golden, black and white"
+                  value={coatColor}
+                  onChange={(e) => setCoatColor(e.target.value)}
+                />
+              </div>
+
+              {/* Coat type */}
+              <div className="space-y-2">
+                <Label>Coat type</Label>
+                <Select value={coatType} onValueChange={setCoatType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select coat type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COAT_TYPE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Ear type */}
+              <div className="space-y-2">
+                <Label>Ear type</Label>
+                <div className="flex gap-2">
+                  {EAR_TYPE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setEarType(opt.value)}
+                      className={`flex-1 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                        earType === opt.value
+                          ? 'bg-brand-orange text-white border-brand-orange'
+                          : 'border-border text-muted-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
           {/* Error */}
           {error && (
             <div className="flex items-center gap-2 text-destructive text-xs">
@@ -165,7 +268,7 @@ export default function AddPet({ redirectTo = '/home' }) {
             onClick={handleSubmit}
             disabled={loading}
           >
-            {loading ? 'Saving...' : 'Add pet'}
+            {loading ? 'Saving...' : 'Continue'}
           </Button>
 
         </CardContent>

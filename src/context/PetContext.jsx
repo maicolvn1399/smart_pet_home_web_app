@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 
 const PetContext = createContext(null)
@@ -8,30 +8,33 @@ export function PetProvider({ children }) {
   const [activePet, setActivePet] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchPets() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+  const fetchPets = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
 
-      const { data, error } = await supabase
-        .from('pets')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
+    const { data, error } = await supabase
+      .from('pets')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true })
 
-      if (!error && data) {
-        setPets(data)
-        setActivePet(data[0] ?? null)
-      }
-
-      setLoading(false)
+    if (!error && data) {
+      setPets(data)
+      setActivePet((prev) => {
+        const still = data.find((p) => p.id === prev?.id)
+        return still ?? data[0] ?? null
+      })
     }
 
-    fetchPets()
+    setLoading(false)
   }, [])
 
+  useEffect(() => {
+    fetchPets()
+  }, [fetchPets])
+
   return (
-    <PetContext.Provider value={{ pets, activePet, setActivePet, loading }}>
+    <PetContext.Provider value={{ pets, activePet, setActivePet, loading, refetchPets: fetchPets }}>
       {children}
     </PetContext.Provider>
   )

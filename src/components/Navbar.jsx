@@ -19,6 +19,7 @@ import {
 import { Menu, ChevronDown } from 'lucide-react'
 import { usePet } from '@/context/PetContext'
 import { useLogout } from '@/hooks/useAuth'
+import { useUser } from '@/hooks/useUser'
 
 import logo from '@/assets/logo/logo_navbar.png'
 
@@ -38,6 +39,7 @@ function Navbar() {
   const location = useLocation()
   const { pets, activePet, setActivePet } = usePet()
   const { handleLogout } = useLogout()
+  const { user } = useUser()
 
   const links = [
     { to: '/home',      label: 'Home'      },
@@ -46,14 +48,16 @@ function Navbar() {
     { to: '/settings',  label: 'Settings'  },
   ]
 
+  const userInitial = user?.full_name?.slice(0, 1).toUpperCase() ?? 'U'
+
   return (
     <nav className="border-b bg-background sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
 
           {/* Logo */}
           <Link to="/home" className="flex items-center gap-2">
-            <img src={logo} alt="Smart Pet Home" className="h-16 w-auto" />
+            <img src={logo} alt="Smart Pet Home" className="h-20 w-auto" />
             <span className="text-xl font-bold text-brand-dark-blue hidden sm:inline">
               Smart Pet Home
             </span>
@@ -84,12 +88,12 @@ function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="flex items-center gap-2 pr-2">
-                    <PetAvatar pet={activePet} size="sm" />
+                    <PetAvatar pet={activePet} size="default" />
                     <span className="text-sm font-medium">{activePet.name}</span>
                     <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="text-xs text-muted-foreground">
                     Switch pet
                   </DropdownMenuLabel>
@@ -118,9 +122,11 @@ function Navbar() {
             </Button>
 
             {/* User avatar */}
-            <Avatar>
-              <AvatarImage src="" alt="User avatar" />
-              <AvatarFallback className="bg-brand-orange text-white">U</AvatarFallback>
+            <Avatar size="default">
+              <AvatarImage src={user?.avatar_url ?? ''} alt="User avatar" />
+              <AvatarFallback className="bg-brand-orange text-white">
+                {userInitial}
+              </AvatarFallback>
             </Avatar>
           </div>
 
@@ -132,11 +138,11 @@ function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="flex items-center gap-1">
-                    <PetAvatar pet={activePet} size="sm" />
+                    <PetAvatar pet={activePet} size="default" />
                     <ChevronDown className="w-3 h-3 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="text-xs text-muted-foreground">
                     Switch pet
                   </DropdownMenuLabel>
@@ -160,9 +166,12 @@ function Navbar() {
               </DropdownMenu>
             )}
 
-            <Avatar>
-              <AvatarImage src="" alt="User avatar" />
-              <AvatarFallback className="bg-brand-orange text-white">U</AvatarFallback>
+            {/* User avatar mobile */}
+            <Avatar size="default">
+              <AvatarImage src={user?.avatar_url ?? ''} alt="User avatar" />
+              <AvatarFallback className="bg-brand-orange text-white">
+                {userInitial}
+              </AvatarFallback>
             </Avatar>
 
             <Sheet>

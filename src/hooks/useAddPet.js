@@ -17,16 +17,20 @@ const CAT_BREEDS = [
 
 export { DOG_BREEDS, CAT_BREEDS }
 
-export function useAddPet(redirectTo = '/home') {
+export function useAddPet(redirectTo = '/pet-photo') {
   const navigate = useNavigate()
 
   const [name, setName] = useState('')
   const [type, setType] = useState('')
-  const [breedType, setBreedType] = useState('pure') // 'pure' | 'mixed' | 'unknown'
+  const [breedType, setBreedType] = useState('pure')
   const [breed, setBreed] = useState('')
   const [mixedBreedDesc, setMixedBreedDesc] = useState('')
   const [ageCategory, setAgeCategory] = useState('')
   const [weightKg, setWeightKg] = useState('')
+  const [size, setSize] = useState('')
+  const [coatColor, setCoatColor] = useState('')
+  const [coatType, setCoatType] = useState('')
+  const [earType, setEarType] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -57,6 +61,10 @@ export function useAddPet(redirectTo = '/home') {
     if (breedType === 'mixed' && !mixedBreedDesc.trim()) { setError('Please describe the mix.'); return false }
     if (!ageCategory) { setError('Please select an age category.'); return false }
     if (!weightKg || parseFloat(weightKg) <= 0) { setError('Please enter a valid weight.'); return false }
+    if (!size) { setError('Please select a size.'); return false }
+    if (!coatColor.trim()) { setError('Please enter a coat color.'); return false }
+    if (!coatType) { setError('Please select a coat type.'); return false }
+    if (!earType) { setError('Please select an ear type.'); return false }
     return true
   }
 
@@ -73,7 +81,7 @@ export function useAddPet(redirectTo = '/home') {
       return
     }
 
-    const { error: insertError } = await supabase
+    const { data: pet, error: petError } = await supabase
       .from('pets')
       .insert({
         user_id: user.id,
@@ -83,14 +91,42 @@ export function useAddPet(redirectTo = '/home') {
         age_category: ageCategory,
         weight_kg: parseFloat(weightKg),
       })
+      .select()
+      .single()
 
-    if (insertError) {
-      setError(insertError.message)
+    if (petError) {
+      setError(petError.message)
       setLoading(false)
       return
     }
 
-    navigate(redirectTo)
+    const { error: traitsError } = await supabase
+      .from('pet_physical_traits')
+      .insert({
+        pet_id: pet.id,
+        size,
+        coat_color: coatColor.trim(),
+        coat_type: coatType,
+        ear_type: earType,
+      })
+
+    if (traitsError) {
+      setError(traitsError.message)
+      setLoading(false)
+      return
+    }
+
+    navigate(redirectTo, {
+      state: {
+        pet,
+        traits: {
+          size,
+          coat_color: coatColor,
+          coat_type: coatType,
+          ear_type: earType,
+        }
+      }
+    })
   }
 
   return {
@@ -101,6 +137,10 @@ export function useAddPet(redirectTo = '/home') {
     mixedBreedDesc, setMixedBreedDesc,
     ageCategory, setAgeCategory,
     weightKg, setWeightKg,
+    size, setSize,
+    coatColor, setCoatColor,
+    coatType, setCoatType,
+    earType, setEarType,
     error,
     loading,
     handleSubmit,

@@ -3,6 +3,7 @@ import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Registration from './pages/Registration'
 import AddPet from './pages/AddPet'
+import PetPhoto from './pages/PetPhoto'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Devices from './pages/Devices'
@@ -18,9 +19,16 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registration" element={<Registration />} />
+
         <Route path="/add-pet" element={
           <ProtectedRoute>
             <AddPet />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/pet-photo" element={
+          <ProtectedRoute>
+            <PetPhoto />
           </ProtectedRoute>
         } />
 
