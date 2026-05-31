@@ -54,7 +54,7 @@ const PLACEHOLDER_PETS = [
 ]
 
 // TODO: replace with real user from supabase.auth.getUser()
-const USER_NAME = 'Alex'
+const USER_NAME = 'Michael'
 
 function Home() {
   const [now, setNow] = useState(new Date())
