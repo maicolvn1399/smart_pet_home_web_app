@@ -25,25 +25,24 @@ import {
 import { useDevices } from '@/hooks/useDevices'
 
 const DEVICE_ICONS = {
-  KBL: Bone,
-  WTR: Droplets,
-  TRT: Cookie,
-  BAL: CircleDot,
-  MOV: Radio,
-  DOR: DoorOpen,
-  TMP: Thermometer,
-  VOC: Mic,
+  kibble_dispenser:    Bone,
+  water_dispenser:     Droplets,
+  treat_dispenser:     Cookie,
+  ball_launcher:       CircleDot,
+  movement_detector:   Radio,
+  pet_door:            DoorOpen,
+  temperature_monitor: Thermometer,
+  voice_communication: Mic,
 }
 
 function DeviceCard({ device }) {
   const navigate = useNavigate()
-  const typeCode = device.serial.split('-')[1]
-  const Icon = DEVICE_ICONS[typeCode]
+  const Icon = DEVICE_ICONS[device.type] ?? CircleDot
 
   return (
     <Card
       className="flex flex-col cursor-pointer hover:shadow-md transition-shadow group"
-      onClick={() => navigate(`/devices/${device.serial}`)}
+      onClick={() => navigate(`/devices/${device.serial_number}`)}
     >
       <CardContent className="flex flex-col items-center justify-center gap-4 py-8 relative">
         <div className="w-16 h-16 rounded-2xl bg-brand-dark-blue/10 flex items-center justify-center">
@@ -51,7 +50,16 @@ function DeviceCard({ device }) {
         </div>
         <div className="text-center">
           <p className="text-sm font-semibold text-brand-dark-blue">{device.name}</p>
-          <p className="text-xs text-muted-foreground mt-1 font-mono">{device.serial}</p>
+          <p className="text-xs text-muted-foreground mt-1 font-mono">{device.serial_number}</p>
+          <span className={`inline-block mt-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${
+            device.status === 'online'
+              ? 'bg-green-50 text-green-700'
+              : device.status === 'error'
+              ? 'bg-red-50 text-red-700'
+              : 'bg-muted text-muted-foreground'
+          }`}>
+            {device.status}
+          </span>
         </div>
         <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </CardContent>
@@ -62,6 +70,7 @@ function DeviceCard({ device }) {
 export default function Devices() {
   const {
     devices,
+    loading,
     dialogOpen,
     error,
     seg1Ref,
@@ -94,7 +103,11 @@ export default function Devices() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {devices.length === 0 ? (
+        {loading ? (
+          <p className="text-muted-foreground col-span-full text-center py-12">
+            Loading devices...
+          </p>
+        ) : devices.length === 0 ? (
           <p className="text-muted-foreground col-span-full text-center py-12">
             No devices yet. Click "Add New Device" to get started.
           </p>
