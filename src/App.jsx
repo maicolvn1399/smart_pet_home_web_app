@@ -5,9 +5,9 @@ import Registration from './pages/Registration'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Devices from './pages/Devices'
+import DeviceDetail from './pages/DeviceDetail'
 import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
-
 
 function App() {
   return (
@@ -20,6 +20,7 @@ function App() {
         <Route element={<Layout />}>
           <Route path='/home' element={<Home />} />
           <Route path='/devices' element={<Devices />} />
+          <Route path='/devices/:serial' element={<DeviceDetail />} />
           <Route path='/dashboard' element={<Dashboard />} />
           <Route path='/settings' element={<Settings />} />
         </Route>

@@ -1,6 +1,8 @@
-import { useEffect, useState, useRef } from 'react'
+import { useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Lightbulb, PawPrint } from 'lucide-react'
+import { useHome } from '@/hooks/useHome'
 
 import dayAnim from '@/assets/animations/day.json'
 import nightAnim from '@/assets/animations/night.json'
@@ -10,42 +12,8 @@ import petAnim3 from '@/assets/animations/pet_anim_3.json'
 import petAnim4 from '@/assets/animations/pet_anim_4.json'
 import petAnim5 from '@/assets/animations/pet_anim_5.json'
 import petAnim6 from '@/assets/animations/pet_anim_6.json'
-import petAnim7 from '@/assets/animations/pet_anim_7.json'
-import petAnim8 from '@/assets/animations/pet_anim_8.json'
-import petAnim9 from '@/assets/animations/pet_anim_9.json'
 
-const PET_ANIMS = [petAnim1, petAnim2, petAnim3, petAnim4, petAnim5, petAnim6, petAnim7, petAnim8, petAnim9]
-
-const PET_TIPS = [
-  "Dogs need at least 30 minutes of exercise per day to stay healthy and happy.",
-  "Fresh water should be available to your pet at all times, change it daily.",
-  "Cats feel safer when they have vertical space. A cat tree goes a long way!",
-  "Regular vet checkups catch problems early and keep your pet living longer.",
-  "Pets thrive on routine. Try to feed them at the same time every day.",
-  "Mental stimulation is just as important as physical exercise for dogs.",
-  "A clean litter box is essential, cats may avoid a dirty one entirely.",
-  "Short, positive training sessions work better than long ones for dogs.",
-]
-
-function getPeriod(hour) {
-  if (hour >= 5 && hour < 12) return 'morning'
-  if (hour >= 12 && hour < 18) return 'afternoon'
-  return 'night'
-}
-
-function getGreeting(period, name) {
-  if (period === 'morning') return `Good morning, ${name}!`
-  if (period === 'afternoon') return `Good afternoon, ${name}!`
-  return `Good night, ${name}!`
-}
-
-function formatTime(date) {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatDate(date) {
-  return date.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })
-}
+const PET_ANIMS = [petAnim1, petAnim2, petAnim3, petAnim4, petAnim5, petAnim6]
 
 // TODO: replace with real pets from Supabase
 const PLACEHOLDER_PETS = [
@@ -54,26 +22,18 @@ const PLACEHOLDER_PETS = [
 ]
 
 // TODO: replace with real user from supabase.auth.getUser()
-const USER_NAME = 'Alex'
+const USER_NAME = 'Michael'
 
 function Home() {
-  const [now, setNow] = useState(new Date())
+  const { period, greeting, time, date, tip } = useHome(USER_NAME)
   const [petAnim] = useState(() => PET_ANIMS[Math.floor(Math.random() * PET_ANIMS.length)])
-  const [tip] = useState(() => PET_TIPS[Math.floor(Math.random() * PET_TIPS.length)])
+
+  const timeAnim = period === 'night' ? nightAnim : dayAnim
 
   const timeAnimRef = useRef(null)
   const petAnimRef = useRef(null)
   const timeAnimInstance = useRef(null)
   const petAnimInstance = useRef(null)
-
-  const period = getPeriod(now.getHours())
-  const timeAnim = period === 'night' ? nightAnim : dayAnim
-
-  // Clock tick
-  useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 60000)
-    return () => clearInterval(interval)
-  }, [])
 
   // Time-of-day animation
   useEffect(() => {
@@ -82,7 +42,6 @@ function Home() {
     import('lottie-web').then(({ default: lottie }) => {
       if (cancelled || !timeAnimRef.current) return
 
-      // Destroy previous instance if it exists
       if (timeAnimInstance.current) {
         timeAnimInstance.current.destroy()
         timeAnimInstance.current = null
@@ -143,17 +102,15 @@ function Home() {
       <div className="flex items-center justify-between gap-6">
         <div className="flex flex-col gap-1">
           <p className="text-xs text-muted-foreground tracking-wide">
-            {formatTime(now)} · {formatDate(now)}
+            {time} · {date}
           </p>
           <h1 className="text-4xl font-bold text-brand-dark-blue leading-tight">
-            {getGreeting(period, USER_NAME)}
+            {greeting}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             Welcome back. Your pets and devices are all looking good.
           </p>
         </div>
-
-        {/* Time-of-day animation — single instance */}
         <div ref={timeAnimRef} className="w-24 h-24 flex-shrink-0" />
       </div>
 
@@ -161,11 +118,8 @@ function Home() {
 
       {/* Main section */}
       <div className="flex gap-6 items-start">
+        <div ref={petAnimRef} className="w-96 h-96 flex-shrink-0" />
 
-        {/* Pet animation — single instance, bigger */}
-        <div ref={petAnimRef} className="w-64 h-64 flex-shrink-0" />
-
-        {/* Right column */}
         <div className="flex flex-col gap-4 flex-1">
 
           <Card>
