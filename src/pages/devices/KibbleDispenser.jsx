@@ -1,12 +1,9 @@
-import { useState } from 'react'
+import { useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Bone, Plus, Trash2, Zap, Scale, Minus } from 'lucide-react'
-
-function generateId() {
-  return Math.random().toString(36).slice(2, 9)
-}
+import { Bone, Trash2, Zap, Scale, Minus, Plus } from 'lucide-react'
+import { useKibbleDispenser } from '@/hooks/useKibbleDispenser'
 
 function SessionRow({ session, gramsPerSession, onTimeChange, onRemove }) {
   return (
@@ -71,54 +68,18 @@ function NumberPicker({ value, onChange, min = 1, max = 6 }) {
 }
 
 export default function KibbleDispenser({ serial }) {
-  const [feedingCount, setFeedingCount] = useState(1)
-  const [sessions, setSessions] = useState([
-    { id: generateId(), time: '08:00', index: 0 },
-  ])
-  const [dailyGrams, setDailyGrams] = useState(500)
-  const [mode, setMode] = useState('smart')
-
-  const gramsPerSession = sessions.length > 0
-    ? Math.round(dailyGrams / sessions.length)
-    : 0
-
-  function handleFeedingCountChange(newCount) {
-    setFeedingCount(newCount)
-    setSessions((prev) => {
-      if (newCount > prev.length) {
-        const toAdd = newCount - prev.length
-        const added = Array.from({ length: toAdd }, (_, i) => ({
-          id: generateId(),
-          time: '12:00',
-          index: prev.length + i,
-        }))
-        return [...prev, ...added]
-      } else {
-        return prev.slice(0, newCount).map((s, i) => ({ ...s, index: i }))
-      }
-    })
-  }
-
-  function removeSession(id) {
-    setSessions((prev) => {
-      const updated = prev
-        .filter((s) => s.id !== id)
-        .map((s, i) => ({ ...s, index: i }))
-      setFeedingCount(updated.length)
-      return updated
-    })
-  }
-
-  function updateTime(id, time) {
-    setSessions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, time } : s))
-    )
-  }
-
-  function handleDailyGramsChange(e) {
-    const val = parseInt(e.target.value)
-    if (!isNaN(val) && val > 0) setDailyGrams(val)
-  }
+  const {
+    feedingCount,
+    sessions,
+    dailyGrams,
+    mode,
+    gramsPerSession,
+    setMode,
+    handleFeedingCountChange,
+    removeSession,
+    updateTime,
+    handleDailyGramsChange,
+  } = useKibbleDispenser()
 
   return (
     <div className="flex flex-col gap-6">
@@ -225,8 +186,6 @@ export default function KibbleDispenser({ serial }) {
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-
-          {/* Number picker */}
           <div className="pb-3 border-b border-border">
             <NumberPicker
               value={feedingCount}
@@ -235,8 +194,6 @@ export default function KibbleDispenser({ serial }) {
               max={6}
             />
           </div>
-
-          {/* Sessions */}
           {sessions.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               No sessions yet.

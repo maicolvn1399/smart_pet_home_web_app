@@ -1,14 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DoorOpen, Plus, Trash2 } from 'lucide-react'
+import { usePetDoor } from '@/hooks/usePetDoor'
 
 import doorAnim from '@/assets/animations/door.json'
-
-function generateId() {
-  return Math.random().toString(36).slice(2, 9)
-}
 
 function TimeRangeRow({ range, index, onOpenChange, onCloseChange, onRemove }) {
   return (
@@ -51,10 +48,15 @@ function TimeRangeRow({ range, index, onOpenChange, onCloseChange, onRemove }) {
 }
 
 export default function PetDoor({ serial }) {
-  const [doorOpen, setDoorOpen] = useState(false)
-  const [ranges, setRanges] = useState([
-    { id: generateId(), openTime: '08:00', closeTime: '20:00' },
-  ])
+  const {
+    doorOpen,
+    ranges,
+    toggleDoor,
+    addRange,
+    removeRange,
+    updateOpenTime,
+    updateCloseTime,
+  } = usePetDoor()
 
   const doorAnimRef = useRef(null)
   const doorAnimInstance = useRef(null)
@@ -107,33 +109,6 @@ export default function PetDoor({ serial }) {
     }
   }, [doorOpen])
 
-  function handleDoorToggle() {
-    setDoorOpen((prev) => !prev)
-  }
-
-  function addRange() {
-    setRanges((prev) => [
-      ...prev,
-      { id: generateId(), openTime: '08:00', closeTime: '20:00' },
-    ])
-  }
-
-  function removeRange(id) {
-    setRanges((prev) => prev.filter((r) => r.id !== id))
-  }
-
-  function updateOpenTime(id, time) {
-    setRanges((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, openTime: time } : r))
-    )
-  }
-
-  function updateCloseTime(id, time) {
-    setRanges((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, closeTime: time } : r))
-    )
-  }
-
   return (
     <div className="flex flex-col gap-6">
 
@@ -180,7 +155,7 @@ export default function PetDoor({ serial }) {
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
             <button
-              onClick={handleDoorToggle}
+              onClick={toggleDoor}
               className={`w-28 h-28 rounded-full text-sm font-semibold transition-colors border-2 ${
                 doorOpen
                   ? 'bg-red-500 text-white border-red-500 hover:bg-red-600'

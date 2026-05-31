@@ -1,48 +1,39 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Thermometer, Clock, Gauge } from 'lucide-react'
+import { useTemperatureMonitor, tempToProgress } from '@/hooks/useTemperatureMonitor'
 
 import thermometerAnim from '@/assets/animations/thermometer.json'
 import windAnim from '@/assets/animations/wind.json'
 
-// Placeholder — replace with real device data from Supabase later
-const MOCK_TEMP_CELSIUS = 27.4
-
-const TEMP_MIN = 0
-const TEMP_MAX = 40
-
-function celsiusToFahrenheit(c) {
-  return Math.round((c * 9) / 5 + 32)
-}
-
-function tempToProgress(temp, min, max) {
-  return Math.min(1, Math.max(0, (temp - min) / (max - min)))
-}
-
 export default function TemperatureMonitor({ serial }) {
-  const [unit, setUnit] = useState('C')
-  const [fanOn, setFanOn] = useState(false)
-  const [scheduleMode, setScheduleMode] = useState('time')
-  const [fanOnTime, setFanOnTime] = useState('14:00')
-  const [fanOffTime, setFanOffTime] = useState('18:00')
-  const [threshold, setThreshold] = useState(28)
+  const {
+    unit,
+    setUnit,
+    fanOn,
+    toggleFan,
+    scheduleMode,
+    setScheduleMode,
+    fanOnTime,
+    setFanOnTime,
+    fanOffTime,
+    setFanOffTime,
+    threshold,
+    incrementThreshold,
+    decrementThreshold,
+    displayTemp,
+    tempColor,
+    rawTemp,
+    tempMin,
+    tempMax,
+  } = useTemperatureMonitor()
 
   const thermometerRef = useRef(null)
   const thermometerInstance = useRef(null)
   const windAnimRef = useRef(null)
   const windAnimInstance = useRef(null)
-
-  const displayTemp = unit === 'C'
-    ? MOCK_TEMP_CELSIUS
-    : celsiusToFahrenheit(MOCK_TEMP_CELSIUS)
-
-  const tempColor = MOCK_TEMP_CELSIUS >= 30
-    ? 'text-red-500'
-    : MOCK_TEMP_CELSIUS >= 25
-    ? 'text-amber-500'
-    : 'text-brand-dark-blue'
 
   // Thermometer animation
   useEffect(() => {
@@ -67,7 +58,7 @@ export default function TemperatureMonitor({ serial }) {
       thermometerInstance.current = anim
 
       anim.addEventListener('DOMLoaded', () => {
-        const progress = tempToProgress(MOCK_TEMP_CELSIUS, TEMP_MIN, TEMP_MAX)
+        const progress = tempToProgress(rawTemp, tempMin, tempMax)
         const frame = Math.round(progress * (anim.totalFrames - 1))
         anim.goToAndStop(frame, true)
       })
@@ -139,10 +130,7 @@ export default function TemperatureMonitor({ serial }) {
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex items-center gap-6">
-
-              {/* Thermometer animation */}
               <div ref={thermometerRef} className="w-32 h-44 flex-shrink-0" />
-
               <div className="flex flex-col gap-3">
                 <div className="flex items-end gap-3">
                   <span className={`text-6xl font-bold ${tempColor}`}>
@@ -188,7 +176,7 @@ export default function TemperatureMonitor({ serial }) {
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4">
             <button
-              onClick={() => setFanOn((prev) => !prev)}
+              onClick={toggleFan}
               className={`w-28 h-28 rounded-full text-sm font-semibold transition-colors border-2 ${
                 fanOn
                   ? 'bg-red-500 text-white border-red-500 hover:bg-red-600'
@@ -227,7 +215,6 @@ export default function TemperatureMonitor({ serial }) {
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
 
-          {/* Mode selector */}
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setScheduleMode('time')}
@@ -268,7 +255,6 @@ export default function TemperatureMonitor({ serial }) {
             </button>
           </div>
 
-          {/* Time range inputs */}
           {scheduleMode === 'time' && (
             <div className="flex flex-col gap-3 pt-1">
               <div className="flex items-center gap-4">
@@ -297,7 +283,6 @@ export default function TemperatureMonitor({ serial }) {
             </div>
           )}
 
-          {/* Threshold input */}
           {scheduleMode === 'threshold' && (
             <div className="flex flex-col gap-3 pt-1">
               <div className="flex items-center gap-3">
@@ -309,7 +294,7 @@ export default function TemperatureMonitor({ serial }) {
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 rounded-full"
-                    onClick={() => setThreshold((t) => Math.max(15, t - 1))}
+                    onClick={decrementThreshold}
                     disabled={threshold <= 15}
                   >
                     <span className="text-lg leading-none">−</span>
@@ -321,7 +306,7 @@ export default function TemperatureMonitor({ serial }) {
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 rounded-full"
-                    onClick={() => setThreshold((t) => Math.min(40, t + 1))}
+                    onClick={incrementThreshold}
                     disabled={threshold >= 40}
                   >
                     <span className="text-lg leading-none">+</span>

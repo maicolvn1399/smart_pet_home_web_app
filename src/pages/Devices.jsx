@@ -1,4 +1,3 @@
-import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,54 +22,36 @@ import {
   AlertCircle,
   ChevronRight,
 } from 'lucide-react'
+import { useDevices } from '@/hooks/useDevices'
 
-const DEVICE_MAP = {
-  KBL: { name: 'Kibble dispenser',    Icon: Bone        },
-  WTR: { name: 'Water dispenser',     Icon: Droplets    },
-  TRT: { name: 'Treat dispenser',     Icon: Cookie      },
-  BAL: { name: 'Ball launcher',       Icon: CircleDot   },
-  MOV: { name: 'Movement detector',   Icon: Radio       },
-  DOR: { name: 'Pet door',            Icon: DoorOpen    },
-  TMP: { name: 'Temperature monitor', Icon: Thermometer },
-  VOC: { name: 'Voice communication', Icon: Mic         },
-}
-
-const VALID_SERIALS = [
-  'SPH-KBL-A4B7C2',
-  'SPH-WTR-X9Y2Z5',
-  'SPH-TRT-K8L1M4',
-  'SPH-BAL-P3Q7R1',
-  'SPH-MOV-H5J2K9',
-  'SPH-DOR-T6U3V8',
-  'SPH-TMP-W1X4Y7',
-  'SPH-VOC-B2C5D8',
-]
-
-function parseSerial(serial) {
-  const parts = serial.toUpperCase().split('-')
-  if (parts.length !== 3) return null
-  if (parts[0] !== 'SPH') return null
-  if (!DEVICE_MAP[parts[1]]) return null
-  if (parts[2].length !== 6) return null
-  return { prefix: parts[0], typeCode: parts[1], uid: parts[2] }
+const DEVICE_ICONS = {
+  KBL: Bone,
+  WTR: Droplets,
+  TRT: Cookie,
+  BAL: CircleDot,
+  MOV: Radio,
+  DOR: DoorOpen,
+  TMP: Thermometer,
+  VOC: Mic,
 }
 
 function DeviceCard({ device }) {
   const navigate = useNavigate()
-  const { Icon, name, serial } = device
+  const typeCode = device.serial.split('-')[1]
+  const Icon = DEVICE_ICONS[typeCode]
 
   return (
     <Card
       className="flex flex-col cursor-pointer hover:shadow-md transition-shadow group"
-      onClick={() => navigate(`/devices/${serial}`)}
+      onClick={() => navigate(`/devices/${device.serial}`)}
     >
       <CardContent className="flex flex-col items-center justify-center gap-4 py-8 relative">
         <div className="w-16 h-16 rounded-2xl bg-brand-dark-blue/10 flex items-center justify-center">
           <Icon className="w-8 h-8 text-brand-dark-blue" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-semibold text-brand-dark-blue">{name}</p>
-          <p className="text-xs text-muted-foreground mt-1 font-mono">{serial}</p>
+          <p className="text-sm font-semibold text-brand-dark-blue">{device.name}</p>
+          <p className="text-xs text-muted-foreground mt-1 font-mono">{device.serial}</p>
         </div>
         <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </CardContent>
@@ -79,92 +60,22 @@ function DeviceCard({ device }) {
 }
 
 export default function Devices() {
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [devices, setDevices] = useState([])
-  const [error, setError] = useState('')
-
-  const seg1Ref = useRef(null)
-  const seg2Ref = useRef(null)
-  const seg3Ref = useRef(null)
-
-  function getSerial() {
-    const s1 = seg1Ref.current?.value.toUpperCase() ?? ''
-    const s2 = seg2Ref.current?.value.toUpperCase() ?? ''
-    const s3 = seg3Ref.current?.value.toUpperCase() ?? ''
-    return `${s1}-${s2}-${s3}`
-  }
-
-  function clearInputs() {
-    if (seg1Ref.current) seg1Ref.current.value = ''
-    if (seg2Ref.current) seg2Ref.current.value = ''
-    if (seg3Ref.current) seg3Ref.current.value = ''
-  }
-
-  function handleSeg1Change(e) {
-    const val = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 3)
-    e.target.value = val
-    if (val.length === 3) seg2Ref.current?.focus()
-    setError('')
-  }
-
-  function handleSeg2Change(e) {
-    const val = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 3)
-    e.target.value = val
-    if (val.length === 3) seg3Ref.current?.focus()
-    setError('')
-  }
-
-  function handleSeg3Change(e) {
-    const val = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6)
-    e.target.value = val
-    setError('')
-  }
-
-  function handleSeg2Keydown(e) {
-    if (e.key === 'Backspace' && seg2Ref.current?.value === '') {
-      seg1Ref.current?.focus()
-    }
-  }
-
-  function handleSeg3Keydown(e) {
-    if (e.key === 'Backspace' && seg3Ref.current?.value === '') {
-      seg2Ref.current?.focus()
-    }
-  }
-
-  function handleConfirm() {
-    const serial = getSerial()
-    const parsed = parseSerial(serial)
-
-    if (!parsed) {
-      setError('Invalid format. Expected SPH - XXX - XXXXXX.')
-      return
-    }
-
-    if (!VALID_SERIALS.includes(serial)) {
-      setError('Serial number not recognized.')
-      return
-    }
-
-    if (devices.find((d) => d.serial === serial)) {
-      setError('This device is already registered.')
-      return
-    }
-
-    const deviceInfo = DEVICE_MAP[parsed.typeCode]
-    setDevices((prev) => [...prev, { ...deviceInfo, serial, id: serial }])
-    setError('')
-    setDialogOpen(false)
-    clearInputs()
-  }
-
-  function handleOpenChange(open) {
-    setDialogOpen(open)
-    if (!open) {
-      setError('')
-      clearInputs()
-    }
-  }
+  const {
+    devices,
+    dialogOpen,
+    error,
+    seg1Ref,
+    seg2Ref,
+    seg3Ref,
+    handleSeg1Change,
+    handleSeg2Change,
+    handleSeg3Change,
+    handleSeg2Keydown,
+    handleSeg3Keydown,
+    handleConfirm,
+    handleOpenChange,
+    setDialogOpen,
+  } = useDevices()
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
