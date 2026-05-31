@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -20,6 +21,7 @@ import {
   Thermometer,
   Mic,
   AlertCircle,
+  ChevronRight,
 } from 'lucide-react'
 
 const DEVICE_MAP = {
@@ -33,7 +35,6 @@ const DEVICE_MAP = {
   VOC: { name: 'Voice communication', Icon: Mic         },
 }
 
-// Placeholder serials — replace with real Supabase query later
 const VALID_SERIALS = [
   'SPH-KBL-A4B7C2',
   'SPH-WTR-X9Y2Z5',
@@ -55,10 +56,15 @@ function parseSerial(serial) {
 }
 
 function DeviceCard({ device }) {
+  const navigate = useNavigate()
   const { Icon, name, serial } = device
+
   return (
-    <Card className="flex flex-col">
-      <CardContent className="flex flex-col items-center justify-center gap-4 py-8">
+    <Card
+      className="flex flex-col cursor-pointer hover:shadow-md transition-shadow group"
+      onClick={() => navigate(`/devices/${serial}`)}
+    >
+      <CardContent className="flex flex-col items-center justify-center gap-4 py-8 relative">
         <div className="w-16 h-16 rounded-2xl bg-brand-dark-blue/10 flex items-center justify-center">
           <Icon className="w-8 h-8 text-brand-dark-blue" />
         </div>
@@ -66,6 +72,7 @@ function DeviceCard({ device }) {
           <p className="text-sm font-semibold text-brand-dark-blue">{name}</p>
           <p className="text-xs text-muted-foreground mt-1 font-mono">{serial}</p>
         </div>
+        <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
       </CardContent>
     </Card>
   )
@@ -162,7 +169,6 @@ export default function Devices() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-brand-dark-blue">My Devices</h1>
@@ -176,7 +182,6 @@ export default function Devices() {
         </Button>
       </div>
 
-      {/* Device grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {devices.length === 0 ? (
           <p className="text-muted-foreground col-span-full text-center py-12">
@@ -189,13 +194,12 @@ export default function Devices() {
         )}
       </div>
 
-      {/* Add device dialog */}
       <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add a new device</DialogTitle>
             <DialogDescription>
-              Enter the serial number found on your device.
+              Enter the serial number found on the back of your device.
             </DialogDescription>
           </DialogHeader>
 
@@ -203,8 +207,6 @@ export default function Devices() {
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Serial number
             </p>
-
-            {/* Segmented input */}
             <div className="flex items-center gap-2">
               <input
                 ref={seg1Ref}
@@ -233,7 +235,6 @@ export default function Devices() {
               />
             </div>
 
-            {/* Error */}
             {error && (
               <div className="flex items-center gap-2 text-destructive text-xs">
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
@@ -241,7 +242,6 @@ export default function Devices() {
               </div>
             )}
 
-            {/* Format hint */}
             <p className="text-xs text-muted-foreground">
               Format: <span className="font-mono">SPH - XXX - XXXXXX</span>
             </p>
