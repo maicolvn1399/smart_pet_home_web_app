@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
 function formatDuration(seconds) {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0')
@@ -6,17 +7,37 @@ function formatDuration(seconds) {
   return `${m}:${s}`
 }
 
-export function useVoiceCommunication() {
+export function useVoiceCommunication(serial) {
   const [state, setState] = useState('idle')
   const [duration, setDuration] = useState(0)
   const [audioUrl, setAudioUrl] = useState(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [deviceId, setDeviceId] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const mediaRecorderRef = useRef(null)
   const chunksRef = useRef([])
   const timerRef = useRef(null)
   const analyserRef = useRef(null)
   const animFrameRef = useRef(null)
+
+  useEffect(() => {
+    if (!serial) return
+
+    async function loadDevice() {
+      const { data: device, error: deviceError } = await supabase
+        .from('devices')
+        .select('id')
+        .eq('serial_number', serial)
+        .single()
+
+      if (!deviceError && device) setDeviceId(device.id)
+      setLoading(false)
+    }
+
+    loadDevice()
+  }, [serial])
 
   function drawWave(canvasRef) {
     if (!canvasRef.current || !analyserRef.current) return
@@ -95,6 +116,7 @@ export function useVoiceCommunication() {
       mediaRecorder.start()
       setState('recording')
       setDuration(0)
+      setError('')
 
       timerRef.current = setInterval(() => {
         setDuration((prev) => prev + 1)
@@ -105,7 +127,8 @@ export function useVoiceCommunication() {
       }, 50)
 
     } catch (err) {
-      console.error('Microphone access denied:', err)
+      setError('Microphone access denied.')
+      console.error('Microphone error:', err)
     }
   }
 
@@ -117,10 +140,53 @@ export function useVoiceCommunication() {
     cancelAnimationFrame(animFrameRef.current)
   }
 
-  function handleSend() {
-    // TODO: send audioUrl to device via Supabase
-    setState('sent')
-    setIsPlaying(false)
+  async function handleSend() {
+    if (!deviceId || !audioUrl) return
+    setError('')
+
+    try {
+      const response = await fetch(audioUrl)
+      const blob = await response.blob()
+
+      const fileName = `${deviceId}-${Date.now()}.webm`
+
+      const { error: uploadError } = await supabase.storage
+        .from('voice-messages')
+        .upload(fileName, blob, { contentType: 'audio/webm' })
+
+      if (uploadError) {
+        setError(uploadError.message)
+        return
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('voice-messages')
+        .getPublicUrl(fileName)
+
+      const { data: { user } } = await supabase.auth.getUser()
+
+      const { error: insertError } = await supabase
+        .from('voice_messages')
+        .insert({
+          device_id: deviceId,
+          user_id: user.id,
+          audio_url: publicUrl,
+          duration_sec: duration,
+          delivered: false,
+        })
+
+      if (insertError) {
+        setError(insertError.message)
+        return
+      }
+
+      setState('sent')
+      setIsPlaying(false)
+
+    } catch (err) {
+      setError(err.message ?? 'Failed to send message.')
+      console.error('Send error:', err)
+    }
   }
 
   function handleDiscard() {
@@ -128,6 +194,7 @@ export function useVoiceCommunication() {
     setAudioUrl(null)
     setDuration(0)
     setIsPlaying(false)
+    setError('')
     setState('idle')
   }
 
@@ -153,6 +220,8 @@ export function useVoiceCommunication() {
     duration,
     audioUrl,
     isPlaying,
+    loading,
+    error,
     setIsPlaying,
     startRecording,
     stopRecording,

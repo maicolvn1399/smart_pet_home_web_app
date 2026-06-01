@@ -116,8 +116,8 @@ function Home() {
       <div className="border-t border-border" />
 
       {/* Main section */}
-      <div className="flex gap-6 items-start">
-        <div ref={petAnimRef} className="w-96 h-96 flex-shrink-0" />
+      <div className="flex flex-col md:flex-row gap-6 items-start">
+        <div ref={petAnimRef} className="w-full h-44 md:w-96 md:h-96 md:flex-shrink-0" />
 
         <div className="flex flex-col gap-4 flex-1">
 
@@ -150,7 +150,7 @@ function Home() {
                 Your pets
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex gap-3 pt-3 flex-wrap">
+            <CardContent className="grid grid-cols-2 gap-3 pt-3 sm:flex sm:flex-wrap">
               {pets.length === 0 ? (
                 <p className="text-xs text-muted-foreground py-2">
                   No pets yet — add your first one!
