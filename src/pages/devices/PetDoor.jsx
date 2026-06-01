@@ -51,12 +51,17 @@ export default function PetDoor({ serial }) {
   const {
     doorOpen,
     ranges,
+    loading,
+    saving,
+    error,
+    successMsg,
     toggleDoor,
     addRange,
     removeRange,
     updateOpenTime,
     updateCloseTime,
-  } = usePetDoor()
+    handleSave,
+  } = usePetDoor(serial)
 
   const doorAnimRef = useRef(null)
   const doorAnimInstance = useRef(null)
@@ -111,6 +116,10 @@ export default function PetDoor({ serial }) {
 
   return (
     <div className="flex flex-col gap-6">
+
+      {loading && (
+        <p className="text-xs text-muted-foreground text-center">Loading settings...</p>
+      )}
 
       {/* Header */}
       <div className="flex items-center gap-4">
@@ -210,10 +219,13 @@ export default function PetDoor({ serial }) {
         </CardContent>
       </Card>
 
+      {error && <p className="text-xs text-destructive text-center">{error}</p>}
+      {successMsg && <p className="text-xs text-green-600 text-center">{successMsg}</p>}
+
       {/* Save */}
       <div className="flex justify-end">
-        <Button size="lg" className="px-8">
-          Save settings
+        <Button size="lg" className="px-8" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save settings'}
         </Button>
       </div>
 

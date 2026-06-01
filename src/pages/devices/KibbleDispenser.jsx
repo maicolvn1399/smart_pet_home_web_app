@@ -74,12 +74,23 @@ export default function KibbleDispenser({ serial }) {
     dailyGrams,
     mode,
     gramsPerSession,
+    loading,
+    saving,
+    error,
+    successMsg,
     setMode,
     handleFeedingCountChange,
     removeSession,
     updateTime,
     handleDailyGramsChange,
-  } = useKibbleDispenser()
+    handleSave,
+  } = useKibbleDispenser(serial)
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <p className="text-muted-foreground">Loading settings...</p>
+    </div>
+  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -212,10 +223,14 @@ export default function KibbleDispenser({ serial }) {
         </CardContent>
       </Card>
 
+      {/* Error / Success */}
+      {error && <p className="text-xs text-destructive text-center">{error}</p>}
+      {successMsg && <p className="text-xs text-green-600 text-center">{successMsg}</p>}
+
       {/* Save */}
       <div className="flex justify-end">
-        <Button size="lg" className="px-8">
-          Save settings
+        <Button size="lg" className="px-8" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save settings'}
         </Button>
       </div>
 

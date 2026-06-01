@@ -10,16 +10,11 @@ import windAnim from '@/assets/animations/wind.json'
 
 export default function TemperatureMonitor({ serial }) {
   const {
-    unit,
-    setUnit,
-    fanOn,
-    toggleFan,
-    scheduleMode,
-    setScheduleMode,
-    fanOnTime,
-    setFanOnTime,
-    fanOffTime,
-    setFanOffTime,
+    unit, setUnit,
+    fanOn, toggleFan,
+    scheduleMode, setScheduleMode,
+    fanOnTime, setFanOnTime,
+    fanOffTime, setFanOffTime,
     threshold,
     incrementThreshold,
     decrementThreshold,
@@ -28,7 +23,12 @@ export default function TemperatureMonitor({ serial }) {
     rawTemp,
     tempMin,
     tempMax,
-  } = useTemperatureMonitor()
+    loading,
+    saving,
+    error,
+    successMsg,
+    handleSave,
+  } = useTemperatureMonitor(serial)
 
   const thermometerRef = useRef(null)
   const thermometerInstance = useRef(null)
@@ -104,6 +104,12 @@ export default function TemperatureMonitor({ serial }) {
       }
     }
   }, [fanOn])
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <p className="text-muted-foreground">Loading settings...</p>
+    </div>
+  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -322,10 +328,13 @@ export default function TemperatureMonitor({ serial }) {
         </CardContent>
       </Card>
 
+      {error && <p className="text-xs text-destructive text-center">{error}</p>}
+      {successMsg && <p className="text-xs text-green-600 text-center">{successMsg}</p>}
+
       {/* Save */}
       <div className="flex justify-end">
-        <Button size="lg" className="px-8">
-          Save settings
+        <Button size="lg" className="px-8" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save settings'}
         </Button>
       </div>
 

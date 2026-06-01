@@ -16,10 +16,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import { Menu, ChevronDown } from 'lucide-react'
+import { Menu, ChevronDown, Contrast } from 'lucide-react'
 import { usePet } from '@/context/PetContext'
 import { useLogout } from '@/hooks/useAuth'
 import { useUser } from '@/hooks/useUser'
+import { useTheme } from '@/hooks/useTheme'
 
 import logo from '@/assets/logo/logo_navbar.png'
 
@@ -35,11 +36,33 @@ function PetAvatar({ pet, size }) {
   )
 }
 
+function ThemeToggle({ theme, toggleTheme }) {
+  return (
+    <button
+      onClick={toggleTheme}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors border ${
+        theme === 'dark'
+          ? 'bg-brand-dark-blue border-brand-dark-blue'
+          : 'bg-muted border-border'
+      }`}
+    >
+      <span
+        className={`inline-flex items-center justify-center w-5 h-5 transform rounded-full bg-white transition-transform shadow-sm ${
+          theme === 'dark' ? 'translate-x-5' : 'translate-x-0.5'
+        }`}
+      >
+        <Contrast className={`w-3 h-3 ${theme === 'dark' ? 'text-brand-dark-blue' : 'text-muted-foreground'}`} />
+      </span>
+    </button>
+  )
+}
+
 function Navbar() {
   const location = useLocation()
   const { pets, activePet, setActivePet } = usePet()
   const { handleLogout } = useLogout()
   const { user } = useUser()
+  const { theme, toggleTheme } = useTheme()
 
   const links = [
     { to: '/home',      label: 'Home'      },
@@ -116,6 +139,8 @@ function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+
+            <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
 
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Logout
@@ -200,6 +225,10 @@ function Navbar() {
                       {link.label}
                     </Link>
                   ))}
+                  <div className="flex items-center justify-between mt-2 px-1">
+                    <span className="text-sm text-muted-foreground">Dark mode</span>
+                    <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+                  </div>
                   <Button variant="outline" className="mt-4" onClick={handleLogout}>
                     Logout
                   </Button>
