@@ -11,6 +11,8 @@ export default function VoiceCommunication({ serial }) {
     state,
     audioUrl,
     isPlaying,
+    loading,
+    error,
     setIsPlaying,
     startRecording,
     stopRecording,
@@ -20,7 +22,7 @@ export default function VoiceCommunication({ serial }) {
     togglePlayback,
     cleanup,
     formattedDuration,
-  } = useVoiceCommunication()
+  } = useVoiceCommunication(serial)
 
   const canvasRef = useRef(null)
   const audioRef = useRef(null)
@@ -75,6 +77,10 @@ export default function VoiceCommunication({ serial }) {
           <p className="text-xs text-muted-foreground font-mono mt-0.5">{serial}</p>
         </div>
       </div>
+
+      {loading && (
+        <p className="text-xs text-muted-foreground text-center">Loading...</p>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -158,6 +164,10 @@ export default function VoiceCommunication({ serial }) {
                     <span className="text-xs text-muted-foreground">{formattedDuration}</span>
                   </div>
                 </div>
+
+                {error && (
+                  <p className="text-xs text-destructive text-center">{error}</p>
+                )}
 
                 <div className="flex gap-3 w-full">
                   <Button
