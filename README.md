@@ -77,6 +77,7 @@ src/
 ├── App.jsx           Main app with routing
 └── main.jsx          Entry point
 ```
+
 ## Common commands
 
 - npm run dev      Start dev server (localhost:5173)

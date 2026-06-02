@@ -16,11 +16,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import { Menu, ChevronDown, Contrast } from 'lucide-react'
+import { Menu, ChevronDown, Contrast, Bell } from 'lucide-react'
 import { usePet } from '@/context/PetContext'
 import { useLogout } from '@/hooks/useAuth'
 import { useUser } from '@/hooks/useUser'
 import { useTheme } from '@/hooks/useTheme'
+import { useNotifications } from '@/hooks/useNotifications'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 import logo from '@/assets/logo/logo_navbar.png'
 
@@ -54,6 +56,117 @@ function ThemeToggle({ theme, toggleTheme }) {
         <Contrast className={`w-3 h-3 ${theme === 'dark' ? 'text-brand-dark-blue' : 'text-muted-foreground'}`} />
       </span>
     </button>
+  )
+}
+
+function NotificationItem({ notification }) {
+  const levelColor = {
+    info: 'bg-blue-50 text-blue-700 border-blue-200',
+    warning: 'bg-amber-50 text-amber-700 border-amber-200',
+    critical: 'bg-red-50 text-red-700 border-red-200',
+  }
+
+  return (
+    <div className={`flex flex-col gap-1 px-3 py-2.5 rounded-lg border ${
+      notification.read ? 'opacity-60' : ''
+    } ${levelColor[notification.level] ?? levelColor.info}`}>
+      <p className="text-xs font-medium">{notification.message}</p>
+      <p className="text-xs opacity-70">
+        {new Date(notification.created_at).toLocaleString([], {
+          month: 'short', day: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        })}
+      </p>
+    </div>
+  )
+}
+
+function NotificationDropdown() {
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    markAllAsRead,
+  } = useNotifications()
+
+  const {
+    subscribed,
+    loading: loadingPush,
+    subscribe,
+    unsubscribe,
+  } = usePushNotifications()
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="relative p-1.5 rounded-md hover:bg-muted transition-colors">
+          <Bell className="w-5 h-5 text-muted-foreground" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-brand-orange text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 p-0" sideOffset={8}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <span className="text-sm font-semibold text-foreground">Notifications</span>
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllAsRead}
+              className="text-xs text-brand-orange hover:underline"
+            >
+              Mark all as read
+            </button>
+          )}
+        </div>
+
+        {/* Notification list */}
+        <div className="flex flex-col gap-2 p-3 max-h-72 overflow-y-auto">
+          {loading ? (
+            <p className="text-xs text-muted-foreground text-center py-4">Loading...</p>
+          ) : notifications.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              No notifications yet.
+            </p>
+          ) : (
+            notifications.map((n) => (
+              <NotificationItem key={n.id} notification={n} />
+            ))
+          )}
+        </div>
+
+        {/* Push notifications toggle */}
+        <div className="border-t px-4 py-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-foreground">
+              Push notifications
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {subscribed ? 'Enabled on this device' : 'Enable for this device'}
+            </p>
+          </div>
+          <button
+            onClick={subscribed ? unsubscribe : subscribe}
+            disabled={loadingPush}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors border flex-shrink-0 ${
+              subscribed
+                ? 'bg-brand-dark-blue border-brand-dark-blue'
+                : 'bg-muted border-border'
+            }`}
+          >
+            <span
+              className={`inline-block w-4 h-4 transform rounded-full bg-white transition-transform shadow-sm ${
+                subscribed ? 'translate-x-4' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -142,6 +255,9 @@ function Navbar() {
 
             <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
 
+            {/* Notifications */}
+            <NotificationDropdown />
+
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Logout
             </Button>
@@ -190,6 +306,9 @@ function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
+
+            {/* Notifications mobile */}
+            <NotificationDropdown />
 
             {/* User avatar mobile */}
             <Avatar size="default">
