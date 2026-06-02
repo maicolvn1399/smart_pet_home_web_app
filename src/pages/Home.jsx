@@ -21,7 +21,7 @@ import petAnim7 from '@/assets/animations/pet_anim_7.json'
 import petAnim8 from '@/assets/animations/pet_anim_8.json'
 import petAnim9 from '@/assets/animations/pet_anim_9.json'
 
-const PET_ANIMS = [petAnim1, petAnim2, petAnim3, petAnim4, petAnim5, petAnim6, petAnim7. petAnim8, petAnim9]
+const PET_ANIMS = [petAnim1, petAnim2, petAnim3, petAnim4, petAnim5, petAnim6, petAnim7, petAnim8, petAnim9]
 
 function Home() {
   const { pets, refetchPets } = usePet()
