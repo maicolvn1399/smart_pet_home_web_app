@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '@/lib/supabase'
 import { usePetEdit } from '@/hooks/usePetEdit'
 import {
   DOG_AGE_OPTIONS,
@@ -26,6 +28,8 @@ import {
 } from '@/constants/petOptions'
 
 export default function PetEditDialog({ pet, open, onClose, onSaved, onDeleted }) {
+  const navigate = useNavigate()
+
   const {
     fileInputRef,
     ageCategory, setAgeCategory,
@@ -114,7 +118,26 @@ export default function PetEditDialog({ pet, open, onClose, onSaved, onDeleted }
                   variant="outline"
                   size="sm"
                   className="flex-1"
-                  onClick={onClose}
+                  onClick={async () => {
+                    const { data: traits } = await supabase
+                      .from('pet_physical_traits')
+                      .select('*')
+                      .eq('pet_id', pet.id)
+                      .single()
+
+                    onClose()
+                    navigate('/pet-photo', {
+                      state: {
+                        pet,
+                        traits: {
+                          size: traits?.size,
+                          coat_color: traits?.coat_color,
+                          coat_type: traits?.coat_type,
+                          ear_type: traits?.ear_type,
+                        }
+                      }
+                    })
+                  }}
                 >
                   <Sparkles className="w-3.5 h-3.5 mr-2" />
                   Regenerate AI

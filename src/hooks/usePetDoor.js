@@ -13,6 +13,7 @@ export function usePetDoor(serial) {
   const [deviceId, setDeviceId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [toggling, setToggling] = useState(false)
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
@@ -26,21 +27,25 @@ export function usePetDoor(serial) {
         .from('devices')
         .select('id')
         .eq('serial_number', serial)
-        .single()
+        .maybeSingle()
+
+      console.log('Device lookup:', device, deviceError)
 
       if (deviceError || !device) {
+        console.log('Device not found or error:', deviceError)
         setLoading(false)
         return
       }
 
       setDeviceId(device.id)
+      console.log('Device ID set:', device.id)
 
       // Load door config
       const { data: config } = await supabase
         .from('pet_door_config')
         .select('*')
         .eq('device_id', device.id)
-        .single()
+        .maybeSingle()
 
       if (config) {
         setDoorOpen(config.current_state === 'open')
@@ -54,7 +59,6 @@ export function usePetDoor(serial) {
         .order('scheduled_time', { ascending: true })
 
       if (scheduleTimes && scheduleTimes.length > 0) {
-        // Group open/close pairs into ranges
         const openTimes = scheduleTimes.filter((s) => s.action === 'open')
         const closeTimes = scheduleTimes.filter((s) => s.action === 'close')
         const paired = openTimes.map((open, i) => ({
@@ -71,8 +75,50 @@ export function usePetDoor(serial) {
     loadConfig()
   }, [serial])
 
-  function toggleDoor() {
-    setDoorOpen((prev) => !prev)
+  async function toggleDoor() {
+    console.log('toggleDoor called, deviceId:', deviceId)
+    if (!deviceId) {
+      console.log('No deviceId, returning early')
+      return
+    }
+    setToggling(true)
+    setError('')
+
+    const newState = !doorOpen
+    const command = newState ? 'open' : 'close'
+
+    console.log('Inserting command:', command, 'for device:', deviceId)
+
+    // Insert command for the Pico W to pick up
+    const { error: cmdError } = await supabase
+      .from('device_commands')
+      .insert({
+        device_id: deviceId,
+        command,
+        executed: false,
+        expires_at: new Date(Date.now() + 60000).toISOString(),
+      })
+
+    if (cmdError) {
+      console.log('Command insert error:', cmdError)
+      setError(cmdError.message)
+      setToggling(false)
+      return
+    }
+
+    console.log('Command inserted successfully')
+
+    // Update door state in DB
+    await supabase
+      .from('pet_door_config')
+      .upsert({
+        device_id: deviceId,
+        current_state: newState ? 'open' : 'closed',
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'device_id' })
+
+    setDoorOpen(newState)
+    setToggling(false)
   }
 
   function addRange() {
@@ -104,7 +150,6 @@ export function usePetDoor(serial) {
     setError('')
     setSuccessMsg('')
 
-    // Upsert door config
     const { error: configError } = await supabase
       .from('pet_door_config')
       .upsert({
@@ -119,7 +164,6 @@ export function usePetDoor(serial) {
       return
     }
 
-    // Delete existing schedule times and re-insert
     await supabase
       .from('door_schedule_times')
       .delete()
@@ -152,6 +196,7 @@ export function usePetDoor(serial) {
     ranges,
     loading,
     saving,
+    toggling,
     error,
     successMsg,
     toggleDoor,
