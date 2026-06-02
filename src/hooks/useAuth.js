@@ -73,7 +73,7 @@ export function useRegistration() {
       return
     }
 
-    navigate('/add-pet')
+    navigate('/profile-photo')
   }
 
   return {
