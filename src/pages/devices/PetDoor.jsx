@@ -53,6 +53,7 @@ export default function PetDoor({ serial }) {
     ranges,
     loading,
     saving,
+    toggling,
     error,
     successMsg,
     toggleDoor,
@@ -165,13 +166,14 @@ export default function PetDoor({ serial }) {
           <CardContent className="flex flex-col items-center gap-4">
             <button
               onClick={toggleDoor}
-              className={`w-28 h-28 rounded-full text-sm font-semibold transition-colors border-2 ${
+              disabled={toggling}
+              className={`w-28 h-28 rounded-full text-sm font-semibold transition-colors border-2 disabled:opacity-50 ${
                 doorOpen
                   ? 'bg-red-500 text-white border-red-500 hover:bg-red-600'
                   : 'bg-green-500 text-white border-green-500 hover:bg-green-600'
               }`}
             >
-              {doorOpen ? 'Close' : 'Open'}
+              {toggling ? '...' : doorOpen ? 'Close' : 'Open'}
             </button>
             <p className="text-xs text-muted-foreground">
               Door is currently{' '}

@@ -11,7 +11,9 @@ import windAnim from '@/assets/animations/wind.json'
 export default function TemperatureMonitor({ serial }) {
   const {
     unit, setUnit,
-    fanOn, toggleFan,
+    fanOn,
+    toggling,
+    toggleFan,
     scheduleMode, setScheduleMode,
     fanOnTime, setFanOnTime,
     fanOffTime, setFanOffTime,
@@ -71,7 +73,7 @@ export default function TemperatureMonitor({ serial }) {
         thermometerInstance.current = null
       }
     }
-  }, [])
+  }, [rawTemp])
 
   // Wind animation
   useEffect(() => {
@@ -105,14 +107,12 @@ export default function TemperatureMonitor({ serial }) {
     }
   }, [fanOn])
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <p className="text-muted-foreground">Loading settings...</p>
-    </div>
-  )
-
   return (
     <div className="flex flex-col gap-6">
+
+      {loading && (
+        <p className="text-xs text-muted-foreground text-center">Loading settings...</p>
+      )}
 
       {/* Header */}
       <div className="flex items-center gap-4">
@@ -140,7 +140,7 @@ export default function TemperatureMonitor({ serial }) {
               <div className="flex flex-col gap-3">
                 <div className="flex items-end gap-3">
                   <span className={`text-6xl font-bold ${tempColor}`}>
-                    {displayTemp}
+                    {displayTemp !== null ? displayTemp : '--'}
                   </span>
                   <div className="flex flex-col gap-1 mb-2">
                     <button
@@ -166,7 +166,10 @@ export default function TemperatureMonitor({ serial }) {
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Last updated just now · Reported by device
+                  {displayTemp !== null
+                    ? 'Last updated — reported by device'
+                    : 'Waiting for device reading...'
+                  }
                 </p>
               </div>
             </div>
@@ -183,13 +186,14 @@ export default function TemperatureMonitor({ serial }) {
           <CardContent className="flex flex-col items-center gap-4">
             <button
               onClick={toggleFan}
-              className={`w-28 h-28 rounded-full text-sm font-semibold transition-colors border-2 ${
+              disabled={toggling}
+              className={`w-28 h-28 rounded-full text-sm font-semibold transition-colors border-2 disabled:opacity-50 ${
                 fanOn
                   ? 'bg-red-500 text-white border-red-500 hover:bg-red-600'
                   : 'bg-green-500 text-white border-green-500 hover:bg-green-600'
               }`}
             >
-              {fanOn ? 'Stop' : 'Start'}
+              {toggling ? '...' : fanOn ? 'Stop' : 'Start'}
             </button>
 
             {fanOn && (

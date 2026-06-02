@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const MOCK_TEMP_CELSIUS = 27.4
 const TEMP_MIN = 0
 const TEMP_MAX = 40
 
@@ -23,16 +22,22 @@ export function useTemperatureMonitor(serial) {
   const [deviceId, setDeviceId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [toggling, setToggling] = useState(false)
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
-  const displayTemp = unit === 'C'
-    ? MOCK_TEMP_CELSIUS
-    : celsiusToFahrenheit(MOCK_TEMP_CELSIUS)
+  // Real temperature from DB
+  const [currentTemp, setCurrentTemp] = useState(null)
 
-  const tempColor = MOCK_TEMP_CELSIUS >= 30
+  const displayTemp = currentTemp !== null
+    ? (unit === 'C' ? currentTemp : celsiusToFahrenheit(currentTemp))
+    : null
+
+  const tempColor = currentTemp === null
+    ? 'text-muted-foreground'
+    : currentTemp >= 30
     ? 'text-red-500'
-    : MOCK_TEMP_CELSIUS >= 25
+    : currentTemp >= 25
     ? 'text-amber-500'
     : 'text-brand-dark-blue'
 
@@ -46,7 +51,7 @@ export function useTemperatureMonitor(serial) {
         .from('devices')
         .select('id')
         .eq('serial_number', serial)
-        .single()
+        .maybeSingle()
 
       if (deviceError || !device) {
         setLoading(false)
@@ -60,7 +65,7 @@ export function useTemperatureMonitor(serial) {
         .from('temperature_monitor_config')
         .select('*')
         .eq('device_id', device.id)
-        .single()
+        .maybeSingle()
 
       if (config) {
         setThreshold(config.upper_threshold)
@@ -74,11 +79,25 @@ export function useTemperatureMonitor(serial) {
         .eq('device_id', device.id)
 
       if (scheduleTimes && scheduleTimes.length > 0) {
-        const onTime = scheduleTimes.find((s) => s.action === 'on')
+        const onTime  = scheduleTimes.find((s) => s.action === 'on')
         const offTime = scheduleTimes.find((s) => s.action === 'off')
         if (onTime) setFanOnTime(onTime.scheduled_time.slice(0, 5))
         if (offTime) setFanOffTime(offTime.scheduled_time.slice(0, 5))
         setScheduleMode('time')
+      }
+
+      // Load latest temperature reading
+      const { data: latestLog } = await supabase
+        .from('temperature_logs')
+        .select('temperature_c, fan_triggered, created_at')
+        .eq('device_id', device.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (latestLog) {
+        setCurrentTemp(latestLog.temperature_c)
+        setFanOn(latestLog.fan_triggered)
       }
 
       setLoading(false)
@@ -87,8 +106,65 @@ export function useTemperatureMonitor(serial) {
     loadConfig()
   }, [serial])
 
-  function toggleFan() {
-    setFanOn((prev) => !prev)
+  // Poll temperature every 10 seconds
+  useEffect(() => {
+    if (!deviceId) return
+
+    async function pollTemp() {
+      const { data: latestLog } = await supabase
+        .from('temperature_logs')
+        .select('temperature_c, fan_triggered, created_at')
+        .eq('device_id', deviceId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (latestLog) {
+        setCurrentTemp(latestLog.temperature_c)
+      }
+    }
+
+    const interval = setInterval(pollTemp, 10000)
+    return () => clearInterval(interval)
+  }, [deviceId])
+
+  async function toggleFan() {
+    if (!deviceId) return
+    setToggling(true)
+    setError('')
+
+    const newFanState = !fanOn
+    const command = newFanState ? 'fan_on' : 'fan_off'
+
+    // Insert command for ESP8266 to pick up
+    const { error: cmdError } = await supabase
+      .from('device_commands')
+      .insert({
+        device_id: deviceId,
+        command,
+        executed: false,
+        expires_at: new Date(Date.now() + 60000).toISOString(),
+      })
+
+    if (cmdError) {
+      setError(cmdError.message)
+      setToggling(false)
+      return
+    }
+
+    // Update fan_enabled in config
+    await supabase
+      .from('temperature_monitor_config')
+      .upsert({
+        device_id: deviceId,
+        upper_threshold: threshold,
+        lower_threshold: threshold - 2,
+        fan_enabled: newFanState,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'device_id' })
+
+    setFanOn(newFanState)
+    setToggling(false)
   }
 
   function incrementThreshold() {
@@ -105,7 +181,6 @@ export function useTemperatureMonitor(serial) {
     setError('')
     setSuccessMsg('')
 
-    // Upsert temperature config
     const { error: configError } = await supabase
       .from('temperature_monitor_config')
       .upsert({
@@ -122,7 +197,6 @@ export function useTemperatureMonitor(serial) {
       return
     }
 
-    // Save fan schedule times if time mode
     if (scheduleMode === 'time') {
       await supabase
         .from('fan_schedule_times')
@@ -150,7 +224,9 @@ export function useTemperatureMonitor(serial) {
 
   return {
     unit, setUnit,
-    fanOn, toggleFan,
+    fanOn,
+    toggling,
+    toggleFan,
     scheduleMode, setScheduleMode,
     fanOnTime, setFanOnTime,
     fanOffTime, setFanOffTime,
@@ -159,7 +235,8 @@ export function useTemperatureMonitor(serial) {
     decrementThreshold,
     displayTemp,
     tempColor,
-    rawTemp: MOCK_TEMP_CELSIUS,
+    currentTemp,
+    rawTemp: currentTemp ?? 0,
     tempMin: TEMP_MIN,
     tempMax: TEMP_MAX,
     loading,
