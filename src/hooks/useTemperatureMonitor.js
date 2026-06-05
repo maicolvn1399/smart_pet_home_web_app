@@ -25,8 +25,6 @@ export function useTemperatureMonitor(serial) {
   const [toggling, setToggling] = useState(false)
   const [error, setError] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
-
-  // Real temperature from DB
   const [currentTemp, setCurrentTemp] = useState(null)
 
   const displayTemp = currentTemp !== null
@@ -106,7 +104,7 @@ export function useTemperatureMonitor(serial) {
     loadConfig()
   }, [serial])
 
-  // Poll temperature every 10 seconds
+  // Poll temperature every 10 seconds and sync fan state
   useEffect(() => {
     if (!deviceId) return
 
@@ -121,6 +119,7 @@ export function useTemperatureMonitor(serial) {
 
       if (latestLog) {
         setCurrentTemp(latestLog.temperature_c)
+        setFanOn(latestLog.fan_triggered)
       }
     }
 
@@ -136,7 +135,6 @@ export function useTemperatureMonitor(serial) {
     const newFanState = !fanOn
     const command = newFanState ? 'fan_on' : 'fan_off'
 
-    // Insert command for ESP8266 to pick up
     const { error: cmdError } = await supabase
       .from('device_commands')
       .insert({
@@ -152,7 +150,6 @@ export function useTemperatureMonitor(serial) {
       return
     }
 
-    // Update fan_enabled in config
     await supabase
       .from('temperature_monitor_config')
       .upsert({
