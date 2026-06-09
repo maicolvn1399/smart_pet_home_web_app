@@ -7,20 +7,18 @@ import { useKibbleDispenser } from '@/hooks/useKibbleDispenser'
 
 function SessionRow({ session, gramsPerSession, onTimeChange, onRemove }) {
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-border last:border-0">
-      <div className="flex items-center gap-2 flex-1">
-        <span className="text-sm text-muted-foreground w-24">
-          Session {session.index + 1}
-        </span>
-        <input
-          type="time"
-          value={session.time}
-          onChange={(e) => onTimeChange(session.id, e.target.value)}
-          className="border border-input rounded-lg px-3 py-1.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-orange"
-        />
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-brand-dark-blue w-16 text-right">
+    <div className="flex items-center justify-between gap-2 py-3 border-b border-border last:border-0">
+      <span className="text-sm text-muted-foreground w-20 flex-shrink-0">
+        Session {session.index + 1}
+      </span>
+      <input
+        type="time"
+        value={session.time}
+        onChange={(e) => onTimeChange(session.id, e.target.value)}
+        className="border border-input rounded-lg px-2 py-1.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-orange flex-1 min-w-0"
+      />
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <span className="text-sm font-medium text-brand-dark-blue">
           {gramsPerSession}g
         </span>
         <Button
@@ -209,7 +207,7 @@ export default function KibbleDispenser({ serial }) {
             <span className="text-sm text-muted-foreground">minutes</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            How long to wait after dispensing before checking if your pet ate. Set lower for demos, higher for real use.
+            How long to wait after dispensing before checking if your pet ate.
           </p>
         </CardContent>
       </Card>
