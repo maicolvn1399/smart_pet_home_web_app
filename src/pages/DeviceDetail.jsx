@@ -5,12 +5,20 @@ import KibbleDispenser from './devices/KibbleDispenser'
 import TemperatureMonitor from './devices/TemperatureMonitor'
 import PetDoor from './devices/PetDoor'
 import VoiceCommunication from './devices/VoiceCommunication'
+import WaterDispenser from './devices/WaterDispenser'
+import TreatDispenser from './devices/TreatDispenser'
+import BallLauncher from './devices/BallLauncher'
+import MovementDetector from './devices/MovementDetector'
 
 const DEVICE_PAGES = {
   KBL: KibbleDispenser,
   TMP: TemperatureMonitor,
   DOR: PetDoor,
   VOC: VoiceCommunication,
+  WTR: WaterDispenser,
+  TRT: TreatDispenser,
+  BAL: BallLauncher,
+  MOV: MovementDetector,
 }
 
 export default function DeviceDetail() {

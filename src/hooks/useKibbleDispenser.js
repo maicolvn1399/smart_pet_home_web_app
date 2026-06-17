@@ -12,6 +12,7 @@ export function useKibbleDispenser(serial) {
   ])
   const [dailyGrams, setDailyGrams] = useState(500)
   const [mode, setMode] = useState('smart')
+  const [waitMinutes, setWaitMinutes] = useState(30)
   const [deviceId, setDeviceId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -51,6 +52,7 @@ export function useKibbleDispenser(serial) {
         setDailyGrams(config.total_grams)
         setFeedingCount(config.meals_per_day)
         setMode(config.mode)
+        setWaitMinutes(config.wait_minutes ?? 30)
       }
 
       const { data: scheduleTimes } = await supabase
@@ -112,6 +114,11 @@ export function useKibbleDispenser(serial) {
     if (!isNaN(val) && val > 0) setDailyGrams(val)
   }
 
+  function handleWaitMinutesChange(e) {
+    const val = parseInt(e.target.value)
+    if (!isNaN(val) && val > 0) setWaitMinutes(val)
+  }
+
   async function handleSave() {
     if (!deviceId) return
     setSaving(true)
@@ -125,6 +132,7 @@ export function useKibbleDispenser(serial) {
         total_grams: dailyGrams,
         meals_per_day: feedingCount,
         mode,
+        wait_minutes: waitMinutes,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'device_id' })
 
@@ -165,6 +173,7 @@ export function useKibbleDispenser(serial) {
     sessions,
     dailyGrams,
     mode,
+    waitMinutes,
     gramsPerSession,
     loading,
     saving,
@@ -175,6 +184,7 @@ export function useKibbleDispenser(serial) {
     removeSession,
     updateTime,
     handleDailyGramsChange,
+    handleWaitMinutesChange,
     handleSave,
   }
 }

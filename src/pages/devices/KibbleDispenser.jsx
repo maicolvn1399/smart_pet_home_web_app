@@ -2,25 +2,23 @@ import { useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Bone, Trash2, Zap, Scale, Minus, Plus } from 'lucide-react'
+import { Bone, Trash2, Zap, Scale, Minus, Plus, Clock } from 'lucide-react'
 import { useKibbleDispenser } from '@/hooks/useKibbleDispenser'
 
 function SessionRow({ session, gramsPerSession, onTimeChange, onRemove }) {
   return (
-    <div className="flex items-center gap-4 py-3 border-b border-border last:border-0">
-      <div className="flex items-center gap-2 flex-1">
-        <span className="text-sm text-muted-foreground w-24">
-          Session {session.index + 1}
-        </span>
-        <input
-          type="time"
-          value={session.time}
-          onChange={(e) => onTimeChange(session.id, e.target.value)}
-          className="border border-input rounded-lg px-3 py-1.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-orange"
-        />
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-brand-dark-blue w-16 text-right">
+    <div className="flex items-center justify-between gap-2 py-3 border-b border-border last:border-0">
+      <span className="text-sm text-muted-foreground w-20 flex-shrink-0">
+        Session {session.index + 1}
+      </span>
+      <input
+        type="time"
+        value={session.time}
+        onChange={(e) => onTimeChange(session.id, e.target.value)}
+        className="border border-input rounded-lg px-2 py-1.5 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-orange flex-1 min-w-0"
+      />
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <span className="text-sm font-medium text-brand-dark-blue">
           {gramsPerSession}g
         </span>
         <Button
@@ -73,6 +71,7 @@ export default function KibbleDispenser({ serial }) {
     sessions,
     dailyGrams,
     mode,
+    waitMinutes,
     gramsPerSession,
     loading,
     saving,
@@ -83,6 +82,7 @@ export default function KibbleDispenser({ serial }) {
     removeSession,
     updateTime,
     handleDailyGramsChange,
+    handleWaitMinutesChange,
     handleSave,
   } = useKibbleDispenser(serial)
 
@@ -184,6 +184,34 @@ export default function KibbleDispenser({ serial }) {
 
       </div>
 
+      {/* Wait time */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Eating wait time
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              min={1}
+              max={120}
+              value={waitMinutes}
+              onChange={handleWaitMinutesChange}
+              className="w-24 border border-input rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brand-orange"
+            />
+            <span className="text-sm text-muted-foreground">minutes</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            How long to wait after dispensing before checking if your pet ate.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Feeding schedule */}
       <Card>
         <CardHeader>
@@ -223,11 +251,9 @@ export default function KibbleDispenser({ serial }) {
         </CardContent>
       </Card>
 
-      {/* Error / Success */}
       {error && <p className="text-xs text-destructive text-center">{error}</p>}
       {successMsg && <p className="text-xs text-green-600 text-center">{successMsg}</p>}
 
-      {/* Save */}
       <div className="flex justify-end">
         <Button size="lg" className="px-8" onClick={handleSave} disabled={saving}>
           {saving ? 'Saving...' : 'Save settings'}
