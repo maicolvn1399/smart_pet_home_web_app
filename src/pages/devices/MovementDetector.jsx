@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Radio, Clock } from 'lucide-react'
 import { useMovementDetector } from '@/hooks/useMovementDetector'
 import radarAnim from '@/assets/animations/radar.json'
@@ -20,7 +19,6 @@ export default function MovementDetector({ serial }) {
   const {
     inactivityThreshold, setInactivityThreshold,
     lastMotion,
-    logs,
     loading,
     saving,
     error,
@@ -88,9 +86,9 @@ export default function MovementDetector({ serial }) {
             Last activity
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center gap-4">
-          <div ref={radarRef} className="w-24 h-24 flex-shrink-0" />
-          <div>
+        <CardContent className="flex flex-col items-center gap-3">
+          <div ref={radarRef} className="w-40 h-40" />
+          <div className="text-center">
             <p className="text-lg font-semibold text-foreground">
               {timeAgo(lastMotion)}
             </p>
@@ -139,47 +137,6 @@ export default function MovementDetector({ serial }) {
           <p className="text-xs text-muted-foreground">
             Send an alert if no movement is detected for this long. Default is 60 minutes.
           </p>
-        </CardContent>
-      </Card>
-
-      {/* Recent activity log */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-              Recent activity
-            </CardTitle>
-            <Badge variant="outline">{logs.length} events</Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {logs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No motion detected yet.
-            </p>
-          ) : (
-            <div className="flex flex-col divide-y divide-border">
-              {logs.map((log) => (
-                <div key={log.id} className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium">Motion detected</p>
-                      {log.sensor_id && (
-                        <p className="text-xs text-muted-foreground">Sensor {log.sensor_id}</p>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(log.created_at).toLocaleString([], {
-                      month: 'short', day: 'numeric',
-                      hour: '2-digit', minute: '2-digit'
-                    })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
 

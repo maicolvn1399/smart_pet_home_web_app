@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Bone, Thermometer, DoorOpen, Mic, Maximize2 } from 'lucide-react'
+import { Bone, Thermometer, DoorOpen, Mic, Maximize2, Droplets, Cookie, CircleDot, Radio } from 'lucide-react'
 import { useDashboard } from '@/hooks/useDashboard'
 import { usePet } from '@/context/PetContext'
 
@@ -40,7 +40,8 @@ function StatCard({ icon: Icon, label, value, sub, color }) {
 
 function ChartCard({ title, children, onExpand }) {
   return (
-    <div className="bg-background border border-border rounded-xl p-4 cursor-pointer group relative"
+    <div
+      className="bg-background border border-border rounded-xl p-4 cursor-pointer group relative"
       onClick={onExpand}
     >
       <div className="flex items-center justify-between mb-3">
@@ -52,10 +53,10 @@ function ChartCard({ title, children, onExpand }) {
   )
 }
 
-function TemperatureChart({ data, expanded }) {
+function LineChart({ data, dataKey, color, label, expanded }) {
   const canvasRef = useRef(null)
-  const chartRef = useRef(null)
-  const height = expanded ? 300 : 160
+  const chartRef  = useRef(null)
+  const height    = expanded ? 300 : 160
 
   useEffect(() => {
     if (!canvasRef.current || !data.length) return
@@ -63,29 +64,26 @@ function TemperatureChart({ data, expanded }) {
     const loadChart = async () => {
       const { Chart, registerables } = await import('https://esm.sh/chart.js@4.4.1')
       Chart.register(...registerables)
-
       if (chartRef.current) chartRef.current.destroy()
 
-      const isDark = matchMedia('(prefers-color-scheme: dark)').matches
+      const isDark    = matchMedia('(prefers-color-scheme: dark)').matches
       const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'
       const textColor = isDark ? '#aaa' : '#888'
 
       chartRef.current = new Chart(canvasRef.current, {
         type: 'line',
         data: {
-          labels: data.map((d) => d.time),
-          datasets: [
-            {
-              label: 'Temperature °C',
-              data: data.map((d) => d.temp),
-              borderColor: '#1F4E79',
-              backgroundColor: 'rgba(31,78,121,0.08)',
-              borderWidth: 2,
-              pointRadius: 2,
-              tension: 0.4,
-              fill: true,
-            },
-          ],
+          labels:   data.map((d) => d.time),
+          datasets: [{
+            label,
+            data:            data.map((d) => d[dataKey]),
+            borderColor:     color,
+            backgroundColor: color + '15',
+            borderWidth:     2,
+            pointRadius:     2,
+            tension:         0.4,
+            fill:            true,
+          }],
         },
         options: {
           responsive: true,
@@ -105,18 +103,65 @@ function TemperatureChart({ data, expanded }) {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: `${height}px` }}>
-      <canvas ref={canvasRef}
-        role="img"
-        aria-label="Line chart showing temperature over time"
-      >Temperature over time chart</canvas>
+      <canvas ref={canvasRef} role="img" aria-label={label}>{label}</canvas>
+    </div>
+  )
+}
+
+function BarChart({ data, colors, expanded, ariaLabel }) {
+  const canvasRef = useRef(null)
+  const chartRef  = useRef(null)
+  const height    = expanded ? 300 : 160
+
+  useEffect(() => {
+    if (!canvasRef.current || !data.length) return
+
+    const loadChart = async () => {
+      const { Chart, registerables } = await import('https://esm.sh/chart.js@4.4.1')
+      Chart.register(...registerables)
+      if (chartRef.current) chartRef.current.destroy()
+
+      const isDark    = matchMedia('(prefers-color-scheme: dark)').matches
+      const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'
+      const textColor = isDark ? '#aaa' : '#888'
+
+      chartRef.current = new Chart(canvasRef.current, {
+        type: 'bar',
+        data: {
+          labels:   data.map((d) => d.label ?? d.time),
+          datasets: [{
+            data:            data.map((d) => d.value ?? d.served ?? d.duration ?? 0),
+            backgroundColor: colors ?? data.map((d) => d.color ?? '#1F4E79'),
+            borderRadius:    4,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: textColor, font: { size: 10 } }, grid: { color: gridColor } },
+            y: { ticks: { color: textColor, font: { size: 10 }, stepSize: 1 }, grid: { color: gridColor } },
+          },
+        },
+      })
+    }
+
+    loadChart()
+    return () => { if (chartRef.current) chartRef.current.destroy() }
+  }, [data, expanded])
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: `${height}px` }}>
+      <canvas ref={canvasRef} role="img" aria-label={ariaLabel}>{ariaLabel}</canvas>
     </div>
   )
 }
 
 function FeedingChart({ data, expanded }) {
   const canvasRef = useRef(null)
-  const chartRef = useRef(null)
-  const height = expanded ? 300 : 160
+  const chartRef  = useRef(null)
+  const height    = expanded ? 300 : 160
 
   useEffect(() => {
     if (!canvasRef.current || !data.length) return
@@ -124,30 +169,19 @@ function FeedingChart({ data, expanded }) {
     const loadChart = async () => {
       const { Chart, registerables } = await import('https://esm.sh/chart.js@4.4.1')
       Chart.register(...registerables)
-
       if (chartRef.current) chartRef.current.destroy()
 
-      const isDark = matchMedia('(prefers-color-scheme: dark)').matches
+      const isDark    = matchMedia('(prefers-color-scheme: dark)').matches
       const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'
       const textColor = isDark ? '#aaa' : '#888'
 
       chartRef.current = new Chart(canvasRef.current, {
         type: 'bar',
         data: {
-          labels: data.map((d) => d.time),
+          labels:   data.map((d) => d.time),
           datasets: [
-            {
-              label: 'Served (g)',
-              data: data.map((d) => d.served),
-              backgroundColor: '#1F4E79',
-              borderRadius: 4,
-            },
-            {
-              label: 'Eaten (g)',
-              data: data.map((d) => d.eaten),
-              backgroundColor: '#4FC3F7',
-              borderRadius: 4,
-            },
+            { label: 'Served (g)', data: data.map((d) => d.served), backgroundColor: '#1F4E79', borderRadius: 4 },
+            { label: 'Eaten (g)',  data: data.map((d) => d.eaten),  backgroundColor: '#4FC3F7', borderRadius: 4 },
           ],
         },
         options: {
@@ -168,78 +202,15 @@ function FeedingChart({ data, expanded }) {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: `${height}px` }}>
-      <canvas ref={canvasRef}
-        role="img"
-        aria-label="Bar chart showing grams served vs eaten per feeding session"
-      >Feeding sessions chart</canvas>
-    </div>
-  )
-}
-
-function DoorChart({ data, expanded }) {
-  const canvasRef = useRef(null)
-  const chartRef = useRef(null)
-  const height = expanded ? 300 : 160
-
-  useEffect(() => {
-    if (!canvasRef.current || !data.length) return
-
-    const loadChart = async () => {
-      const { Chart, registerables } = await import('https://esm.sh/chart.js@4.4.1')
-      Chart.register(...registerables)
-
-      if (chartRef.current) chartRef.current.destroy()
-
-      const isDark = matchMedia('(prefers-color-scheme: dark)').matches
-      const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'
-      const textColor = isDark ? '#aaa' : '#888'
-
-      const opens = data.filter((d) => d.action === 'open')
-      const closes = data.filter((d) => d.action === 'close')
-
-      chartRef.current = new Chart(canvasRef.current, {
-        type: 'bar',
-        data: {
-          labels: ['Opens', 'Closes'],
-          datasets: [
-            {
-              label: 'Count',
-              data: [opens.length, closes.length],
-              backgroundColor: ['#2E7D32', '#C62828'],
-              borderRadius: 6,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { color: textColor, font: { size: 11 } }, grid: { color: gridColor } },
-            y: { ticks: { color: textColor, font: { size: 11 }, stepSize: 1 }, grid: { color: gridColor } },
-          },
-        },
-      })
-    }
-
-    loadChart()
-    return () => { if (chartRef.current) chartRef.current.destroy() }
-  }, [data, expanded])
-
-  return (
-    <div style={{ position: 'relative', width: '100%', height: `${height}px` }}>
-      <canvas ref={canvasRef}
-        role="img"
-        aria-label="Bar chart showing door opens vs closes"
-      >Door activity chart</canvas>
+      <canvas ref={canvasRef} role="img" aria-label="Feeding sessions chart">Feeding sessions chart</canvas>
     </div>
   )
 }
 
 function VocChart({ data, expanded }) {
   const canvasRef = useRef(null)
-  const chartRef = useRef(null)
-  const height = expanded ? 300 : 160
+  const chartRef  = useRef(null)
+  const height    = expanded ? 300 : 160
 
   useEffect(() => {
     if (!canvasRef.current || !data.length) return
@@ -247,25 +218,22 @@ function VocChart({ data, expanded }) {
     const loadChart = async () => {
       const { Chart, registerables } = await import('https://esm.sh/chart.js@4.4.1')
       Chart.register(...registerables)
-
       if (chartRef.current) chartRef.current.destroy()
 
-      const isDark = matchMedia('(prefers-color-scheme: dark)').matches
+      const isDark    = matchMedia('(prefers-color-scheme: dark)').matches
       const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)'
       const textColor = isDark ? '#aaa' : '#888'
 
       chartRef.current = new Chart(canvasRef.current, {
         type: 'bar',
         data: {
-          labels: data.map((d) => d.time),
-          datasets: [
-            {
-              label: 'Duration (s)',
-              data: data.map((d) => d.duration),
-              backgroundColor: data.map((d) => d.delivered ? '#1F4E79' : '#F57C00'),
-              borderRadius: 4,
-            },
-          ],
+          labels:   data.map((d) => d.time),
+          datasets: [{
+            label:           'Duration (s)',
+            data:            data.map((d) => d.duration),
+            backgroundColor: data.map((d) => d.delivered ? '#1F4E79' : '#F57C00'),
+            borderRadius:    4,
+          }],
         },
         options: {
           responsive: true,
@@ -285,12 +253,18 @@ function VocChart({ data, expanded }) {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: `${height}px` }}>
-      <canvas ref={canvasRef}
-        role="img"
-        aria-label="Bar chart showing voice message durations"
-      >Voice messages chart</canvas>
+      <canvas ref={canvasRef} role="img" aria-label="Voice messages chart">Voice messages chart</canvas>
     </div>
   )
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return 'No activity'
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
+  if (diff < 60)   return `${diff}s ago`
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  return `${Math.floor(diff / 86400)}d ago`
 }
 
 export default function Dashboard() {
@@ -303,10 +277,18 @@ export default function Dashboard() {
     tempStats,
     doorStats,
     vocStats,
+    waterStats,
+    treatStats,
+    ballStats,
+    motionStats,
     feedingChartData,
     tempChartData,
     doorChartData,
     vocChartData,
+    waterChartData,
+    treatChartData,
+    ballChartData,
+    motionChartData,
   } = useDashboard()
 
   const [expandedChart, setExpandedChart] = useState(null)
@@ -379,103 +361,216 @@ export default function Dashboard() {
                 color="text-brand-orange"
               />
             )}
+            {has('water_dispenser') && (
+              <StatCard
+                icon={Droplets}
+                label="Water level"
+                value={waterStats?.currentLevel !== null && waterStats?.currentLevel !== undefined ? `${waterStats.currentLevel}%` : '--'}
+                sub={`${waterStats?.refills ?? 0} refills · ${waterStats?.readings ?? 0} readings`}
+                color="text-blue-500"
+              />
+            )}
+            {has('treat_dispenser') && (
+              <StatCard
+                icon={Cookie}
+                label="Treat sessions"
+                value={treatStats?.total ?? '--'}
+                sub={`${treatStats?.wins ?? 0} wins · ${treatStats?.losses ?? 0} losses`}
+                color="text-brand-orange"
+              />
+            )}
+            {has('ball_launcher') && (
+              <StatCard
+                icon={CircleDot}
+                label="Ball launches"
+                value={ballStats?.total ?? '--'}
+                sub={ballStats?.ballCount !== null ? `${ballStats?.ballCount ?? 0} balls remaining` : 'Left · Center · Right'}
+                color="text-green-600"
+              />
+            )}
+            {has('movement_detector') && (
+              <StatCard
+                icon={Radio}
+                label="Motion events"
+                value={motionStats?.total ?? '--'}
+                sub={`Last: ${timeAgo(motionStats?.lastMotion)}`}
+                color="text-brand-dark-blue"
+              />
+            )}
           </div>
 
           {/* Charts grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {has('kibble_dispenser') && feedingChartData.length > 0 && (
-              <ChartCard
-                title="Feeding sessions"
-                onExpand={() => setExpandedChart('feeding')}
-              >
-                <div className="flex gap-4 mb-3">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-brand-dark-blue inline-block" />
-                    Served
-                  </span>
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-[#4FC3F7] inline-block" />
-                    Eaten
-                  </span>
-                </div>
-                <FeedingChart data={feedingChartData} expanded={false} />
+
+            {/* KBL */}
+            {has('kibble_dispenser') && (
+              <ChartCard title="Feeding sessions" onExpand={() => setExpandedChart('feeding')}>
+                {feedingChartData.length > 0 ? (
+                  <>
+                    <div className="flex gap-4 mb-3">
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-brand-dark-blue inline-block" />Served
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-[#4FC3F7] inline-block" />Eaten
+                      </span>
+                    </div>
+                    <FeedingChart data={feedingChartData} expanded={false} />
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-8">No feeding data for this period.</p>
+                )}
               </ChartCard>
             )}
 
-            {has('temperature_monitor') && tempChartData.length > 0 && (
-              <ChartCard
-                title="Temperature over time"
-                onExpand={() => setExpandedChart('temp')}
-              >
-                <div className="flex gap-4 mb-3">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-brand-dark-blue inline-block" />
-                    °C
-                  </span>
-                </div>
-                <TemperatureChart data={tempChartData} expanded={false} />
+            {/* TMP */}
+            {has('temperature_monitor') && (
+              <ChartCard title="Temperature over time" onExpand={() => setExpandedChart('temp')}>
+                {tempChartData.length > 0 ? (
+                  <>
+                    <div className="flex gap-4 mb-3">
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-brand-dark-blue inline-block" />°C
+                      </span>
+                    </div>
+                    <LineChart data={tempChartData} dataKey="temp" color="#1F4E79" label="Temperature °C" expanded={false} />
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-8">No temperature data for this period.</p>
+                )}
               </ChartCard>
             )}
 
-            {has('pet_door') && doorChartData.length > 0 && (
-              <ChartCard
-                title="Door activity"
-                onExpand={() => setExpandedChart('door')}
-              >
-                <div className="flex gap-4 mb-3">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-green-600 inline-block" />
-                    Opens
-                  </span>
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-red-600 inline-block" />
-                    Closes
-                  </span>
-                </div>
-                <DoorChart data={doorChartData} expanded={false} />
+            {/* DOR */}
+            {has('pet_door') && (
+              <ChartCard title="Door activity" onExpand={() => setExpandedChart('door')}>
+                {doorChartData.length > 0 ? (
+                  <>
+                    <div className="flex gap-4 mb-3">
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-green-600 inline-block" />Opens
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-red-600 inline-block" />Closes
+                      </span>
+                    </div>
+                    <BarChart
+                      data={[
+                        { label: 'Opens',  value: doorStats?.opens  ?? 0, color: '#2E7D32' },
+                        { label: 'Closes', value: doorStats?.closes ?? 0, color: '#C62828' },
+                      ]}
+                      expanded={false}
+                      ariaLabel="Door activity chart"
+                    />
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-8">No door activity for this period.</p>
+                )}
               </ChartCard>
             )}
 
-            {has('voice_communication') && vocChartData.length > 0 && (
-              <ChartCard
-                title="Voice messages"
-                onExpand={() => setExpandedChart('voc')}
-              >
-                <div className="flex gap-4 mb-3">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-brand-dark-blue inline-block" />
-                    Delivered
-                  </span>
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span className="w-2.5 h-2.5 rounded-sm bg-brand-orange inline-block" />
-                    Pending
-                  </span>
-                </div>
-                <VocChart data={vocChartData} expanded={false} />
+            {/* VOC */}
+            {has('voice_communication') && (
+              <ChartCard title="Voice messages" onExpand={() => setExpandedChart('voc')}>
+                {vocChartData.length > 0 ? (
+                  <>
+                    <div className="flex gap-4 mb-3">
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-brand-dark-blue inline-block" />Delivered
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-brand-orange inline-block" />Pending
+                      </span>
+                    </div>
+                    <VocChart data={vocChartData} expanded={false} />
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-8">No voice messages for this period.</p>
+                )}
               </ChartCard>
             )}
 
-            {/* Empty state when devices exist but no data */}
-            {has('kibble_dispenser') && feedingChartData.length === 0 && (
-              <ChartCard title="Feeding sessions" onExpand={() => {}}>
-                <p className="text-xs text-muted-foreground text-center py-8">No feeding data for this period.</p>
+            {/* WTR */}
+            {has('water_dispenser') && (
+              <ChartCard title="Water level over time" onExpand={() => setExpandedChart('water')}>
+                {waterChartData.length > 0 ? (
+                  <>
+                    <div className="flex gap-4 mb-3">
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block" />Level %
+                      </span>
+                    </div>
+                    <LineChart data={waterChartData} dataKey="level" color="#3B82F6" label="Water level %" expanded={false} />
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-8">No water data for this period.</p>
+                )}
               </ChartCard>
             )}
-            {has('temperature_monitor') && tempChartData.length === 0 && (
-              <ChartCard title="Temperature over time" onExpand={() => {}}>
-                <p className="text-xs text-muted-foreground text-center py-8">No temperature data for this period.</p>
+
+            {/* TRT */}
+            {has('treat_dispenser') && (
+              <ChartCard title="Treat session results" onExpand={() => setExpandedChart('treat')}>
+                {treatChartData.length > 0 ? (
+                  <>
+                    <div className="flex gap-4 mb-3">
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-brand-orange inline-block" />Wins
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-brand-dark-blue inline-block" />Losses
+                      </span>
+                    </div>
+                    <BarChart data={treatChartData} expanded={false} ariaLabel="Treat session results chart" />
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-8">No treat data for this period.</p>
+                )}
               </ChartCard>
             )}
-            {has('pet_door') && doorChartData.length === 0 && (
-              <ChartCard title="Door activity" onExpand={() => {}}>
-                <p className="text-xs text-muted-foreground text-center py-8">No door activity for this period.</p>
+
+            {/* BAL */}
+            {has('ball_launcher') && (
+              <ChartCard title="Ball launches by angle" onExpand={() => setExpandedChart('ball')}>
+                {ballChartData.length > 0 ? (
+                  <>
+                    <div className="flex gap-4 mb-3">
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-brand-dark-blue inline-block" />Left
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-brand-orange inline-block" />Center
+                      </span>
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-[#4FC3F7] inline-block" />Right
+                      </span>
+                    </div>
+                    <BarChart data={ballChartData} expanded={false} ariaLabel="Ball launches by angle chart" />
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-8">No launch data for this period.</p>
+                )}
               </ChartCard>
             )}
-            {has('voice_communication') && vocChartData.length === 0 && (
-              <ChartCard title="Voice messages" onExpand={() => {}}>
-                <p className="text-xs text-muted-foreground text-center py-8">No voice messages for this period.</p>
+
+            {/* MOV */}
+            {has('movement_detector') && (
+              <ChartCard title="Motion events" onExpand={() => setExpandedChart('motion')}>
+                {motionChartData.length > 0 ? (
+                  <>
+                    <div className="flex gap-4 mb-3">
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-brand-dark-blue inline-block" />Motion detected
+                      </span>
+                    </div>
+                    <BarChart data={motionChartData.map((m) => ({ ...m, label: m.time, value: m.value, color: '#1F4E79' }))} expanded={false} ariaLabel="Motion events chart" />
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-8">No motion data for this period.</p>
+                )}
               </ChartCard>
             )}
+
           </div>
         </>
       )}
@@ -486,16 +581,24 @@ export default function Dashboard() {
           <DialogHeader>
             <DialogTitle className="text-brand-dark-blue">
               {expandedChart === 'feeding' && 'Feeding sessions'}
-              {expandedChart === 'temp' && 'Temperature over time'}
-              {expandedChart === 'door' && 'Door activity'}
-              {expandedChart === 'voc' && 'Voice messages'}
+              {expandedChart === 'temp'    && 'Temperature over time'}
+              {expandedChart === 'door'    && 'Door activity'}
+              {expandedChart === 'voc'     && 'Voice messages'}
+              {expandedChart === 'water'   && 'Water level over time'}
+              {expandedChart === 'treat'   && 'Treat session results'}
+              {expandedChart === 'ball'    && 'Ball launches by angle'}
+              {expandedChart === 'motion'  && 'Motion events'}
             </DialogTitle>
           </DialogHeader>
           <div className="pt-2">
             {expandedChart === 'feeding' && <FeedingChart data={feedingChartData} expanded={true} />}
-            {expandedChart === 'temp' && <TemperatureChart data={tempChartData} expanded={true} />}
-            {expandedChart === 'door' && <DoorChart data={doorChartData} expanded={true} />}
-            {expandedChart === 'voc' && <VocChart data={vocChartData} expanded={true} />}
+            {expandedChart === 'temp'    && <LineChart data={tempChartData} dataKey="temp" color="#1F4E79" label="Temperature °C" expanded={true} />}
+            {expandedChart === 'door'    && <BarChart data={[{ label: 'Opens', value: doorStats?.opens ?? 0, color: '#2E7D32' }, { label: 'Closes', value: doorStats?.closes ?? 0, color: '#C62828' }]} expanded={true} ariaLabel="Door activity chart" />}
+            {expandedChart === 'voc'     && <VocChart data={vocChartData} expanded={true} />}
+            {expandedChart === 'water'   && <LineChart data={waterChartData} dataKey="level" color="#3B82F6" label="Water level %" expanded={true} />}
+            {expandedChart === 'treat'   && <BarChart data={treatChartData} expanded={true} ariaLabel="Treat session results chart" />}
+            {expandedChart === 'ball'    && <BarChart data={ballChartData} expanded={true} ariaLabel="Ball launches by angle chart" />}
+            {expandedChart === 'motion'  && <BarChart data={motionChartData.map((m) => ({ ...m, label: m.time, value: m.value, color: '#1F4E79' }))} expanded={true} ariaLabel="Motion events chart" />}
           </div>
         </DialogContent>
       </Dialog>
