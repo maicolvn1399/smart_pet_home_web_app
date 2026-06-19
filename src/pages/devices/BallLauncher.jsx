@@ -162,7 +162,7 @@ export default function BallLauncher({ serial }) {
               <span className="text-white text-xs font-semibold capitalize">Launch {defaultAngle}</span>
             </button>
             {launched && (
-              <p className="text-xs text-green-600 font-medium">🎾 Ball launched!</p>
+              <p className="text-xs text-green-600 font-medium">Ball launched!</p>
             )}
           </div>
 
