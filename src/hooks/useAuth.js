@@ -101,3 +101,91 @@ export function useLogout() {
 
   return { handleLogout }
 }
+
+export function useForgotPassword() {
+  const [email, setEmail] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  async function handleSendRecovery() {
+    setError('')
+    setLoading(true)
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+
+    setSent(true)
+    setLoading(false)
+  }
+
+  return {
+    email,
+    setEmail,
+    error,
+    loading,
+    sent,
+    handleSendRecovery,
+  }
+}
+
+export function useResetPassword() {
+  const navigate = useNavigate()
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  async function handleUpdatePassword() {
+    setError('')
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.')
+      return
+    }
+
+    setLoading(true)
+
+    const { error } = await supabase.auth.updateUser({ password })
+
+    if (error) {
+      setError(error.message)
+      setLoading(false)
+      return
+    }
+
+    setSuccess(true)
+    setLoading(false)
+
+    // Esperar un momento para que el usuario vea el mensaje de éxito,
+    // después cerrar sesión y redirigir al login
+    setTimeout(async () => {
+      await supabase.auth.signOut()
+      navigate('/login')
+    }, 2000)
+  }
+
+  return {
+    password,
+    setPassword,
+    confirmPassword,
+    setConfirmPassword,
+    error,
+    loading,
+    success,
+    handleUpdatePassword,
+  }
+}
