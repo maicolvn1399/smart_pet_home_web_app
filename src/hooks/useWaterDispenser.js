@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 
 export function useWaterDispenser(serial) {
   const [deviceId, setDeviceId]             = useState(null)
-  const [source, setSource]                 = useState('tank')
+  const [source, setSource]                 = useState('monitor_only')
   const [lowLevelThresh, setLowLevelThresh] = useState(20)
   const [currentLevel, setCurrentLevel]     = useState(null)
   const [logs, setLogs]                     = useState([])
@@ -38,7 +38,7 @@ export function useWaterDispenser(serial) {
 
     if (config) {
       setSource(config.source)
-      setLowLevelThresh(config.low_level_thresh)
+      setLowLevelThresh(config.low_level_threshold)
     }
 
     const { data: latestLog } = await supabase
@@ -64,24 +64,37 @@ export function useWaterDispenser(serial) {
     setLoading(false)
   }
 
+  // Realtime subscription — actualiza el nivel al instante
   useEffect(() => {
     if (!deviceId) return
 
-    async function pollLevel() {
-      const { data: latestLog } = await supabase
-        .from('water_logs')
-        .select('level_percent')
-        .eq('device_id', deviceId)
-        .eq('event_type', 'reading')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+    let cancelled = false
 
-      if (latestLog) setCurrentLevel(latestLog.level_percent)
+    const channel = supabase
+      .channel(`water-${deviceId}`)
+      .on(
+        'postgres_changes',
+        {
+          event:  'INSERT',
+          schema: 'public',
+          table:  'water_logs',
+          filter: `device_id=eq.${deviceId}`,
+        },
+        (payload) => {
+          if (cancelled) return
+          const log = payload.new
+          if (log.event_type === 'reading') {
+            setCurrentLevel(log.level_percent)
+          }
+          setLogs((prev) => [log, ...prev].slice(0, 20))
+        }
+      )
+      .subscribe()
+
+    return () => {
+      cancelled = true
+      supabase.removeChannel(channel)
     }
-
-    const interval = setInterval(pollLevel, 30000)
-    return () => clearInterval(interval)
   }, [deviceId])
 
   async function handleSave() {
@@ -93,10 +106,10 @@ export function useWaterDispenser(serial) {
     const { error: configError } = await supabase
       .from('water_dispenser_config')
       .upsert({
-        device_id:        deviceId,
+        device_id:           deviceId,
         source,
-        low_level_thresh: lowLevelThresh,
-        updated_at:       new Date().toISOString(),
+        low_level_threshold: lowLevelThresh,
+        updated_at:          new Date().toISOString(),
       }, { onConflict: 'device_id' })
 
     if (configError) {

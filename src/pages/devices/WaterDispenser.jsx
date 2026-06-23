@@ -20,6 +20,7 @@ export default function WaterDispenser({ serial }) {
   const waterRef      = useRef(null)
   const waterInstance = useRef(null)
 
+  // Load the animation once when loading finishes
   useEffect(() => {
     if (loading) return
     let cancelled = false
@@ -36,16 +37,8 @@ export default function WaterDispenser({ serial }) {
         container:     waterRef.current,
         animationData: waterAnim,
         renderer:      'svg',
-        loop:          true,
-        autoplay:      true,
-      })
-
-      waterInstance.current.addEventListener('DOMLoaded', () => {
-        if (currentLevel !== null) {
-          const totalFrames = waterInstance.current.totalFrames
-          const frame = Math.round(((100 - currentLevel) / 100) * (totalFrames - 1))
-          waterInstance.current.goToAndStop(frame, true)
-        }
+        loop:          false,
+        autoplay:      false,
       })
     })
 
@@ -56,7 +49,30 @@ export default function WaterDispenser({ serial }) {
         waterInstance.current = null
       }
     }
-  }, [loading, currentLevel])
+  }, [loading])
+
+  // Update the frame whenever the level changes (realtime)
+  useEffect(() => {
+    if (loading || !waterInstance.current) return
+    if (currentLevel === null) return
+
+    const anim = waterInstance.current
+
+    const seek = () => {
+      const totalFrames = anim.totalFrames
+      if (!totalFrames) return
+      const clamped = Math.max(0, Math.min(100, currentLevel))
+      const frame = Math.round((clamped / 100) * (totalFrames - 1))
+      anim.goToAndStop(frame, true)
+    }
+
+    if (anim.isLoaded) {
+      seek()
+    } else {
+      anim.addEventListener('DOMLoaded', seek)
+      return () => anim.removeEventListener('DOMLoaded', seek)
+    }
+  }, [currentLevel, loading])
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
@@ -82,7 +98,7 @@ export default function WaterDispenser({ serial }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Tank water level
+            Bowl water level
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-3">
@@ -116,39 +132,39 @@ export default function WaterDispenser({ serial }) {
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             <button
-              onClick={() => setSource('tank')}
+              onClick={() => setSource('automatic')}
               className={`flex items-start gap-3 p-3 rounded-lg border transition-colors text-left ${
-                source === 'tank'
+                source === 'automatic'
                   ? 'border-brand-orange bg-orange-50'
                   : 'border-border hover:bg-muted/50'
               }`}
             >
-              <Droplets className={`w-5 h-5 mt-0.5 flex-shrink-0 ${source === 'tank' ? 'text-brand-orange' : 'text-muted-foreground'}`} />
+              <Droplets className={`w-5 h-5 mt-0.5 flex-shrink-0 ${source === 'automatic' ? 'text-brand-orange' : 'text-muted-foreground'}`} />
               <div>
-                <p className={`text-sm font-medium ${source === 'tank' ? 'text-brand-orange' : 'text-foreground'}`}>
-                  Tank
+                <p className={`text-sm font-medium ${source === 'automatic' ? 'text-brand-orange' : 'text-foreground'}`}>
+                  Automatic
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Uses a water tank. Alerts when tank runs empty.
+                  Auto-refills the bowl from the tank when it runs low.
                 </p>
               </div>
             </button>
 
             <button
-              onClick={() => setSource('pipe')}
+              onClick={() => setSource('monitor_only')}
               className={`flex items-start gap-3 p-3 rounded-lg border transition-colors text-left ${
-                source === 'pipe'
+                source === 'monitor_only'
                   ? 'border-brand-orange bg-orange-50'
                   : 'border-border hover:bg-muted/50'
               }`}
             >
-              <WavesArrowDown className={`w-5 h-5 mt-0.5 flex-shrink-0 ${source === 'pipe' ? 'text-brand-orange' : 'text-muted-foreground'}`} />
+              <WavesArrowDown className={`w-5 h-5 mt-0.5 flex-shrink-0 ${source === 'monitor_only' ? 'text-brand-orange' : 'text-muted-foreground'}`} />
               <div>
-                <p className={`text-sm font-medium ${source === 'pipe' ? 'text-brand-orange' : 'text-foreground'}`}>
-                  Pipe
+                <p className={`text-sm font-medium ${source === 'monitor_only' ? 'text-brand-orange' : 'text-foreground'}`}>
+                  Monitor only
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Connected to water supply. No tank empty alerts.
+                  Tracks the level and alerts you to refill manually.
                 </p>
               </div>
             </button>
@@ -178,9 +194,9 @@ export default function WaterDispenser({ serial }) {
               <span className="text-sm text-muted-foreground">%</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              {source === 'pipe'
-                ? 'Alert when water bowl level drops below this percentage.'
-                : 'Alert when tank level drops below this percentage.'
+              {source === 'automatic'
+                ? 'The bowl auto-refills when it drops below this level.'
+                : 'Alert when water level drops below this percentage.'
               }
             </p>
           </CardContent>
