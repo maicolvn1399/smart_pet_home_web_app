@@ -1,13 +1,16 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { CheckCircle2 } from 'lucide-react'
 import { useResetPassword } from '@/hooks/useAuth'
+import { useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import logo from '@/assets/logo/logo_navbar.png'
 
 export default function ResetPassword() {
+  const navigate = useNavigate()
   const {
     password, setPassword,
     confirmPassword, setConfirmPassword,
@@ -16,6 +19,26 @@ export default function ResetPassword() {
     success,
     handleUpdatePassword,
   } = useResetPassword()
+
+  useEffect(() => {
+    // Escuchar el evento PASSWORD_RECOVERY de Supabase
+    // Se dispara cuando el usuario llega desde el link del email
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          // La sesión de recovery está activa, el usuario puede cambiar su contraseña
+          // No hacemos nada acá — solo confirmamos que la sesión existe
+          console.log('Password recovery session active')
+        }
+
+        if (event === 'SIGNED_OUT') {
+          navigate('/login')
+        }
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [navigate])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
